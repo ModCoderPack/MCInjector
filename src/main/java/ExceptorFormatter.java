@@ -15,7 +15,7 @@ public class ExceptorFormatter extends Formatter
 	{
 		StringBuffer sb = new StringBuffer();
 		String message = formatMessage(record);
-		sb.append(record.getLevel().getLocalizedName());
+		sb.append(record.getLevel().getName());
 		sb.append(": ");
 		sb.append(message);
 		sb.append("\n");
