@@ -22,7 +22,7 @@ public class ExceptorClassAdapter extends ClassAdapter
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
     {
-        log.log(Level.FINE, "Class: " + name + " Extends: " + superName);
+        ExceptorClassAdapter.log.log(Level.FINE, "Class: " + name + " Extends: " + superName);
 
         this.className = name;
         super.visit(version, access, name, signature, superName, interfaces);
@@ -32,7 +32,7 @@ public class ExceptorClassAdapter extends ClassAdapter
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions)
     {
         MethodVisitor mv;
-        log.log(Level.FINER, "Name: " + name + " Desc: " + desc + " Sig: " + signature);
+        ExceptorClassAdapter.log.log(Level.FINER, "Name: " + name + " Desc: " + desc + " Sig: " + signature);
 
         String clsSig = this.className + "." + name + desc;
         if ((exceptions != null) && (exceptions.length > 0))
@@ -49,17 +49,17 @@ public class ExceptorClassAdapter extends ClassAdapter
                     exceptionList += "," + exception;
                 }
             }
-            log.log(Level.FINEST, clsSig + exceptionList);
+            ExceptorClassAdapter.log.log(Level.FINEST, clsSig + exceptionList);
         }
 
         String excList = this.exc.mappings.getProperty(clsSig);
         if (excList != null)
         {
-            log.log(Level.FINE, "Adding Exceptions: " + excList + " to " + clsSig);
-            exceptions = getExceptions(excList);
+            ExceptorClassAdapter.log.log(Level.FINE, "Adding Exceptions: " + excList + " to " + clsSig);
+            exceptions = this.getExceptions(excList);
         }
 
-        mv = cv.visitMethod(access, name, desc, signature, exceptions);
+        mv = this.cv.visitMethod(access, name, desc, signature, exceptions);
         return mv;
     }
 

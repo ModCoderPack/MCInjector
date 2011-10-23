@@ -35,14 +35,14 @@ public class Exceptor
         }
 
         Formatter formatter = new ExceptorFormatter();
-        log.setUseParentHandlers(false);
-        log.setLevel(Level.ALL);
+        Exceptor.log.setUseParentHandlers(false);
+        Exceptor.log.setLevel(Level.ALL);
 
         try
         {
             FileHandler filehandler = new FileHandler(args[3], false);
             filehandler.setFormatter(formatter);
-            log.addHandler(filehandler);
+            Exceptor.log.addHandler(filehandler);
         }
         catch (Exception exception)
         {
@@ -51,10 +51,10 @@ public class Exceptor
         }
 
         System.out.println("Exceptor v1.0 by Searge");
-        log.log(Level.INFO, "Exceptor v1.0 by Searge");
-        log.log(Level.INFO, "Input: " + args[0]);
-        log.log(Level.INFO, "Output: " + args[1]);
-        log.log(Level.INFO, "Mappings: " + args[2]);
+        Exceptor.log.log(Level.INFO, "Exceptor v1.0 by Searge");
+        Exceptor.log.log(Level.INFO, "Input: " + args[0]);
+        Exceptor.log.log(Level.INFO, "Output: " + args[1]);
+        Exceptor.log.log(Level.INFO, "Mappings: " + args[2]);
 
         Exceptor exc = new Exceptor();
         if (!exc.processJar(args[0], args[1], args[2]))
@@ -110,7 +110,7 @@ public class Exceptor
 
     public boolean processJar(String inFileName, String outFileName, String configFile)
     {
-        if (!loadMappings(configFile))
+        if (!this.loadMappings(configFile))
         {
             System.out.println("Can't load mappings");
             return false;
@@ -156,7 +156,7 @@ public class Exceptor
             return false;
         }
 
-        boolean result = processJar(inStream, outStream);
+        boolean result = this.processJar(inStream, outStream);
 
         try
         {
@@ -246,14 +246,14 @@ public class Exceptor
             byte[] entryData = entryBuffer.toByteArray();
 
             String entryName = entry.getName();
-            log.log(Level.INFO, "Processing " + entryName);
+            Exceptor.log.log(Level.INFO, "Processing " + entryName);
 
             if (entryName.endsWith(".class"))
             {
-                entryData = process(entryData);
+                entryData = this.process(entryData);
             }
 
-            log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
+            Exceptor.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
 
             try
             {

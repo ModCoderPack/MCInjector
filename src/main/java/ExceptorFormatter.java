@@ -9,7 +9,7 @@ public class ExceptorFormatter extends Formatter
     public synchronized String format(LogRecord record)
     {
         StringBuffer sb = new StringBuffer();
-        String message = formatMessage(record);
+        String message = this.formatMessage(record);
         sb.append(record.getLevel().getName());
         sb.append(": ");
         sb.append(message);
