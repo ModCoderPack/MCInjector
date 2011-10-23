@@ -56,14 +56,14 @@ public class ExceptorClassAdapter extends ClassAdapter
         if (excList != null)
         {
             ExceptorClassAdapter.log.log(Level.FINE, "Adding Exceptions: " + excList + " to " + clsSig);
-            exceptions = this.getExceptions(excList);
+            exceptions = ExceptorClassAdapter.getExceptions(excList);
         }
 
         mv = this.cv.visitMethod(access, name, desc, signature, exceptions);
         return mv;
     }
 
-    private String[] getExceptions(String exceptionList)
+    private static String[] getExceptions(String exceptionList)
     {
         return exceptionList.split(",");
     }

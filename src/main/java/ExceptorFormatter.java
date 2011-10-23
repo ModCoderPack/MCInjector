@@ -26,6 +26,7 @@ public class ExceptorFormatter extends Formatter
             }
             catch (Exception ex)
             {
+                // ignore
             }
         }
         return sb.toString();
