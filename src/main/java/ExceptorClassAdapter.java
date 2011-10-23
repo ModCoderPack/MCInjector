@@ -1,12 +1,11 @@
-import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
-public class ExceptorClassAdapter extends ClassAdapter
+public class ExceptorClassAdapter extends ClassVisitor implements Opcodes
 {
     private static final Logger log = Logger.getLogger("Exceptor");
     private Exceptor exc;
@@ -14,7 +13,7 @@ public class ExceptorClassAdapter extends ClassAdapter
 
     public ExceptorClassAdapter(ClassVisitor cv, Exceptor exc)
     {
-        super(cv);
+        super(Opcodes.ASM4, cv);
 
         this.exc = exc;
     }
