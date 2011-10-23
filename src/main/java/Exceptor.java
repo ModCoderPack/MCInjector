@@ -28,7 +28,7 @@ public class Exceptor
 
     public static void main(String[] args)
     {
-        if(args.length < 4)
+        if (args.length < 4)
         {
             System.out.println("Exceptor [IN] [OUT] [MAPFILE] [LOGFILE]");
             System.exit(1);
@@ -44,7 +44,7 @@ public class Exceptor
             filehandler.setFormatter(formatter);
             log.addHandler(filehandler);
         }
-        catch(Exception exception)
+        catch (Exception exception)
         {
             System.out.println("Could not create logfile");
             System.exit(1);
@@ -57,7 +57,7 @@ public class Exceptor
         log.log(Level.INFO, "Mappings: " + args[2]);
 
         Exceptor exc = new Exceptor();
-        if(!exc.processJar(args[0], args[1], args[2]))
+        if (!exc.processJar(args[0], args[1], args[2]))
         {
             System.out.println("Error processing the jar");
             System.exit(1);
@@ -90,12 +90,16 @@ public class Exceptor
         {
             try
             {
-                if(reader != null)
+                if (reader != null)
+                {
                     reader.close();
-                if(instream != null)
+                }
+                if (instream != null)
+                {
                     instream.close();
+                }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -106,7 +110,7 @@ public class Exceptor
 
     public boolean processJar(String inFileName, String outFileName, String configFile)
     {
-        if(!loadMappings(configFile))
+        if (!loadMappings(configFile))
         {
             System.out.println("Can't load mappings");
             return false;
@@ -115,7 +119,7 @@ public class Exceptor
         File inFile = new File(inFileName);
         File outFile = new File(outFileName);
 
-        if(!inFile.isFile())
+        if (!inFile.isFile())
         {
             System.out.println("Can't find input file");
             return false;
@@ -185,7 +189,7 @@ public class Exceptor
         ZipOutputStream outJar = new ZipOutputStream(outStream);
 
         boolean reading = true;
-        while(reading)
+        while (reading)
         {
             ZipEntry entry;
             try
@@ -198,13 +202,13 @@ public class Exceptor
                 return false;
             }
 
-            if(entry == null)
+            if (entry == null)
             {
                 reading = false;
                 continue;
             }
 
-            if(entry.isDirectory())
+            if (entry.isDirectory())
             {
                 try
                 {
@@ -227,10 +231,11 @@ public class Exceptor
                 do
                 {
                     len = inJar.read(data);
-                    if(len > 0)
+                    if (len > 0)
+                    {
                         entryBuffer.write(data, 0, len);
-                }
-                while(len != -1);
+                    }
+                } while (len != -1);
             }
             catch (IOException e)
             {
@@ -243,8 +248,10 @@ public class Exceptor
             String entryName = entry.getName();
             log.log(Level.INFO, "Processing " + entryName);
 
-            if(entryName.endsWith(".class"))
+            if (entryName.endsWith(".class"))
+            {
                 entryData = process(entryData);
+            }
 
             log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
 

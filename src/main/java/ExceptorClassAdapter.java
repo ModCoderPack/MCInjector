@@ -35,21 +35,25 @@ public class ExceptorClassAdapter extends ClassAdapter
         log.log(Level.FINER, "Name: " + name + " Desc: " + desc + " Sig: " + signature);
 
         String clsSig = this.className + "." + name + desc;
-        if(exceptions != null && exceptions.length > 0)
+        if ((exceptions != null) && (exceptions.length > 0))
         {
             String exceptionList = "=";
-            for(String exception : exceptions)
+            for (String exception : exceptions)
             {
-                if(exceptionList.equals("="))
+                if (exceptionList.equals("="))
+                {
                     exceptionList += exception;
+                }
                 else
+                {
                     exceptionList += "," + exception;
+                }
             }
             log.log(Level.FINEST, clsSig + exceptionList);
         }
 
         String excList = this.exc.mappings.getProperty(clsSig);
-        if(excList != null)
+        if (excList != null)
         {
             log.log(Level.FINE, "Adding Exceptions: " + excList + " to " + clsSig);
             exceptions = getExceptions(excList);
