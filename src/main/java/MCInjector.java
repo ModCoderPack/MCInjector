@@ -329,7 +329,7 @@ public class MCInjector
 
         reader.accept(classNode, 0);
 
-        for (MethodNode method : (List<MethodNode>)classNode.methods)
+        for (MethodNode method : classNode.methods)
         {
             MCInjector.log.log(Level.INFO, classNode.name + "." + method.name);
 
