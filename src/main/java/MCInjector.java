@@ -5,14 +5,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -28,167 +24,149 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 
-
 public class MCInjector
 {
     private final static Logger log = Logger.getLogger("MCInjector");
-    public final Properties mappings;
+    public final Properties mappings = new Properties();
 
     public static void main(String[] args)
     {
         if (args.length < 4)
         {
-            System.out.println("MCInjector [IN] [OUT] [MAPFILE] [LOGFILE]");
+            System.out.println("MCInjector IN OUT MAPFILE [LOGFILE]");
             System.exit(1);
         }
 
-        Formatter formatter = new LogFormatter();
+        File inFile = new File(args[0]);
+        File outFile = new File(args[1]);
+        File mapFile = new File(args[2]);
+        String logFile = null;
+        if (args.length >= 4)
+        {
+            logFile = args[3];
+        }
+
+        System.out.println("MCInjector v2.0 by Searge, LexManos, Fesh0r");
+
         MCInjector.log.setUseParentHandlers(false);
         MCInjector.log.setLevel(Level.ALL);
 
+        if (logFile != null)
+        {
+            try
+            {
+                FileHandler filehandler = new FileHandler(logFile);
+                filehandler.setFormatter(new LogFormatter());
+                MCInjector.log.addHandler(filehandler);
+            }
+            catch (Exception e)
+            {
+                System.err.println("Could not create logfile: " + e.getMessage());
+                System.exit(1);
+            }
+        }
+
         try
         {
-            FileHandler filehandler = new FileHandler(args[3], false);
-            filehandler.setFormatter(formatter);
-            MCInjector.log.addHandler(filehandler);
+            new MCInjector().processJar(inFile, outFile, mapFile);
         }
-        catch (Exception exception)
+        catch (IOException e)
         {
-            System.out.println("Could not create logfile");
-            System.exit(1);
-        }
-
-        System.out.println("MCInjector v1.0 by Searge");
-        MCInjector.log.log(Level.INFO, "MCInjector v1.0 by Searge");
-        MCInjector.log.log(Level.INFO, "Input: " + args[0]);
-        MCInjector.log.log(Level.INFO, "Output: " + args[1]);
-        MCInjector.log.log(Level.INFO, "Mappings: " + args[2]);
-
-        MCInjector exc = new MCInjector();
-        if (!exc.processJar(args[0], args[1], args[2]))
-        {
-            System.out.println("Error processing the jar");
+            System.err.println(e.getMessage());
             System.exit(1);
         }
 
         System.out.println("Processed " + args[0]);
     }
 
-    public MCInjector()
+    public void processJar(File inFile, File outFile, File mapFile) throws IOException
     {
-        this.mappings = new Properties();
-    }
+        this.loadMap(mapFile);
 
-    public boolean loadMappings(String fileName)
-    {
-        InputStream instream = null;
-        Reader reader = null;
+        InputStream inStream = null;
+        OutputStream outStream = null;
+
         try
         {
-            instream = new FileInputStream(fileName);
-            reader = new InputStreamReader(instream);
-            this.mappings.load(reader);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            return false;
+            if (inFile.getCanonicalPath().equals(outFile.getCanonicalPath()))
+            {
+                throw new IOException("Output and input files must differ");
+            }
+
+            try
+            {
+                inStream = new FileInputStream(inFile);
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new FileNotFoundException("Could not open input file: " + e.getMessage());
+            }
+
+            try
+            {
+                outStream = new FileOutputStream(outFile);
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new FileNotFoundException("Could not open output file: " + e.getMessage());
+            }
+
+            this.processJar(inStream, outStream);
         }
         finally
         {
-            try
+            if (outStream != null)
             {
-                if (reader != null)
+                try
                 {
-                    reader.close();
+                    outStream.close();
                 }
-                if (instream != null)
+                catch (IOException e)
                 {
-                    instream.close();
+                    // ignore
                 }
             }
-            catch (Exception e)
+
+            if (inStream != null)
             {
-                e.printStackTrace();
+                try
+                {
+                    inStream.close();
+                }
+                catch (IOException e)
+                {
+                    // ignore
+                }
             }
         }
-
-        return true;
     }
 
-    public boolean processJar(String inFileName, String outFileName, String configFile)
+    private void loadMap(File mapFile) throws IOException
     {
-        if (!this.loadMappings(configFile))
-        {
-            System.out.println("Can't load mappings");
-            return false;
-        }
-
-        File inFile = new File(inFileName);
-        File outFile = new File(outFileName);
-
-        if (!inFile.isFile())
-        {
-            System.out.println("Can't find input file");
-            return false;
-        }
-
-        OutputStream outStream;
+        InputStream mapStream = null;
         try
         {
-            outStream = new FileOutputStream(outFile);
-        }
-        catch (FileNotFoundException e1)
-        {
-            e1.printStackTrace();
-            return false;
-        }
-
-        InputStream inStream;
-        try
-        {
-            inStream = new FileInputStream(inFile);
-        }
-        catch (FileNotFoundException e)
-        {
-            try
-            {
-                outStream.close();
-                outFile.delete();
-            }
-            catch (IOException e1)
-            {
-                e1.printStackTrace();
-            }
-            e.printStackTrace();
-            return false;
-        }
-
-        boolean result = this.processJar(inStream, outStream);
-
-        try
-        {
-            outStream.close();
+            mapStream = new FileInputStream(mapFile);
+            this.mappings.load(mapStream);
         }
         catch (IOException e)
         {
-            e.printStackTrace();
-            return false;
+            throw new IOException("Could not open map file: " + e.getMessage());
         }
         finally
         {
-            try
+            if (mapStream != null)
             {
-                inStream.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                return false;
+                try
+                {
+                    mapStream.close();
+                }
+                catch (IOException e)
+                {
+                    // ignore;
+                }
             }
         }
-
-        return result;
     }
 
     public boolean processJar(InputStream inStream, OutputStream outStream)
