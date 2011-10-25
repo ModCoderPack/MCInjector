@@ -21,28 +21,28 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 
 
-public class Exceptor
+public class MCInjector
 {
-    private final static Logger log = Logger.getLogger("Exceptor");
+    private final static Logger log = Logger.getLogger("MCInjector");
     public final Properties mappings;
 
     public static void main(String[] args)
     {
         if (args.length < 4)
         {
-            System.out.println("Exceptor [IN] [OUT] [MAPFILE] [LOGFILE]");
+            System.out.println("MCInjector [IN] [OUT] [MAPFILE] [LOGFILE]");
             System.exit(1);
         }
 
-        Formatter formatter = new ExceptorFormatter();
-        Exceptor.log.setUseParentHandlers(false);
-        Exceptor.log.setLevel(Level.ALL);
+        Formatter formatter = new LogFormatter();
+        MCInjector.log.setUseParentHandlers(false);
+        MCInjector.log.setLevel(Level.ALL);
 
         try
         {
             FileHandler filehandler = new FileHandler(args[3], false);
             filehandler.setFormatter(formatter);
-            Exceptor.log.addHandler(filehandler);
+            MCInjector.log.addHandler(filehandler);
         }
         catch (Exception exception)
         {
@@ -50,13 +50,13 @@ public class Exceptor
             System.exit(1);
         }
 
-        System.out.println("Exceptor v1.0 by Searge");
-        Exceptor.log.log(Level.INFO, "Exceptor v1.0 by Searge");
-        Exceptor.log.log(Level.INFO, "Input: " + args[0]);
-        Exceptor.log.log(Level.INFO, "Output: " + args[1]);
-        Exceptor.log.log(Level.INFO, "Mappings: " + args[2]);
+        System.out.println("MCInjector v1.0 by Searge");
+        MCInjector.log.log(Level.INFO, "MCInjector v1.0 by Searge");
+        MCInjector.log.log(Level.INFO, "Input: " + args[0]);
+        MCInjector.log.log(Level.INFO, "Output: " + args[1]);
+        MCInjector.log.log(Level.INFO, "Mappings: " + args[2]);
 
-        Exceptor exc = new Exceptor();
+        MCInjector exc = new MCInjector();
         if (!exc.processJar(args[0], args[1], args[2]))
         {
             System.out.println("Error processing the jar");
@@ -66,7 +66,7 @@ public class Exceptor
         System.out.println("Processed " + args[0]);
     }
 
-    public Exceptor()
+    public MCInjector()
     {
         this.mappings = new Properties();
     }
@@ -246,14 +246,14 @@ public class Exceptor
             byte[] entryData = entryBuffer.toByteArray();
 
             String entryName = entry.getName();
-            Exceptor.log.log(Level.INFO, "Processing " + entryName);
+            MCInjector.log.log(Level.INFO, "Processing " + entryName);
 
             if (entryName.endsWith(".class"))
             {
                 entryData = this.process(entryData);
             }
 
-            Exceptor.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
+            MCInjector.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
 
             try
             {

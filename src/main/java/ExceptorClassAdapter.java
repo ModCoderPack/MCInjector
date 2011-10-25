@@ -7,11 +7,11 @@ import org.objectweb.asm.Opcodes;
 
 public class ExceptorClassAdapter extends ClassVisitor implements Opcodes
 {
-    private static final Logger log = Logger.getLogger("Exceptor");
-    private Exceptor exc;
+    private static final Logger log = Logger.getLogger("MCInjector");
+    private MCInjector exc;
     String className;
 
-    public ExceptorClassAdapter(ClassVisitor cv, Exceptor exc)
+    public ExceptorClassAdapter(ClassVisitor cv, MCInjector exc)
     {
         super(Opcodes.ASM4, cv);
 

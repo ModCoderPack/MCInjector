@@ -3,7 +3,7 @@ import java.io.StringWriter;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
-public class ExceptorFormatter extends Formatter
+public class LogFormatter extends Formatter
 {
     @Override
     public synchronized String format(LogRecord record)
