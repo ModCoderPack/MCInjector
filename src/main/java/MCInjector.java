@@ -1,11 +1,13 @@
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.logging.FileHandler;
@@ -61,30 +63,62 @@ public class MCInjector
             }
             catch (Exception e)
             {
-                System.err.println("Could not create logfile: " + e.getMessage());
+                System.err.println("ERROR: Could not create logfile: " + e.getMessage());
                 System.exit(1);
             }
         }
 
         try
         {
-            new MCInjector().processJar(inFile, outFile, mapFile);
+            new MCInjector(mapFile).processJar(inFile, outFile);
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            System.err.println(e.getMessage());
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
             System.exit(1);
         }
 
         System.out.println("Processed " + args[0]);
     }
 
-    public void processJar(File inFile, File outFile, File mapFile) throws IOException
+    public MCInjector(File mapFile) throws IOException
     {
         this.loadMap(mapFile);
+    }
 
-        InputStream inStream = null;
-        OutputStream outStream = null;
+    private void loadMap(File mapFile) throws IOException
+    {
+        Reader mapReader = null;
+        try
+        {
+            mapReader = new FileReader(mapFile);
+            this.mappings.load(mapReader);
+        }
+        catch (IOException e)
+        {
+            throw new IOException("Could not open map file: " + e.getMessage());
+        }
+        finally
+        {
+            if (mapReader != null)
+            {
+                try
+                {
+                    mapReader.close();
+                }
+                catch (IOException e)
+                {
+                    // ignore;
+                }
+            }
+        }
+    }
+
+    private void processJar(File inFile, File outFile) throws IOException
+    {
+        ZipInputStream inJar = null;
+        ZipOutputStream outJar = null;
 
         try
         {
@@ -95,7 +129,7 @@ public class MCInjector
 
             try
             {
-                inStream = new FileInputStream(inFile);
+                inJar = new ZipInputStream(new BufferedInputStream(new FileInputStream(inFile)));
             }
             catch (FileNotFoundException e)
             {
@@ -104,115 +138,31 @@ public class MCInjector
 
             try
             {
-                outStream = new FileOutputStream(outFile);
+                outJar = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outFile)));
             }
             catch (FileNotFoundException e)
             {
                 throw new FileNotFoundException("Could not open output file: " + e.getMessage());
             }
 
-            this.processJar(inStream, outStream);
-        }
-        finally
-        {
-            if (outStream != null)
+            while (true)
             {
-                try
-                {
-                    outStream.close();
-                }
-                catch (IOException e)
-                {
-                    // ignore
-                }
-            }
+                ZipEntry entry = inJar.getNextEntry();
 
-            if (inStream != null)
-            {
-                try
+                if (entry == null)
                 {
-                    inStream.close();
+                    break;
                 }
-                catch (IOException e)
-                {
-                    // ignore
-                }
-            }
-        }
-    }
 
-    private void loadMap(File mapFile) throws IOException
-    {
-        InputStream mapStream = null;
-        try
-        {
-            mapStream = new FileInputStream(mapFile);
-            this.mappings.load(mapStream);
-        }
-        catch (IOException e)
-        {
-            throw new IOException("Could not open map file: " + e.getMessage());
-        }
-        finally
-        {
-            if (mapStream != null)
-            {
-                try
-                {
-                    mapStream.close();
-                }
-                catch (IOException e)
-                {
-                    // ignore;
-                }
-            }
-        }
-    }
-
-    public boolean processJar(InputStream inStream, OutputStream outStream)
-    {
-        ZipInputStream inJar = new ZipInputStream(inStream);
-        ZipOutputStream outJar = new ZipOutputStream(outStream);
-
-        boolean reading = true;
-        while (reading)
-        {
-            ZipEntry entry;
-            try
-            {
-                entry = inJar.getNextEntry();
-            }
-            catch (IOException e)
-            {
-                System.out.println("Could not get entry");
-                return false;
-            }
-
-            if (entry == null)
-            {
-                reading = false;
-                continue;
-            }
-
-            if (entry.isDirectory())
-            {
-                try
+                if (entry.isDirectory())
                 {
                     outJar.putNextEntry(entry);
+                    continue;
                 }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                    return false;
-                }
-                continue;
-            }
 
-            byte[] data = new byte[4096];
-            ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
+                byte[] data = new byte[4096];
+                ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
 
-            try
-            {
                 int len;
                 do
                 {
@@ -222,71 +172,56 @@ public class MCInjector
                         entryBuffer.write(data, 0, len);
                     }
                 } while (len != -1);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                continue;
-            }
 
-            byte[] entryData = entryBuffer.toByteArray();
+                byte[] entryData = entryBuffer.toByteArray();
 
-            String entryName = entry.getName();
-            MCInjector.log.log(Level.INFO, "Processing " + entryName);
+                String entryName = entry.getName();
 
-            if (entryName.endsWith(".class"))
-            {
-                entryData = this.process(entryData);
-                entryData = this.processLVT(entryData);
-            }
+                if (entryName.endsWith(".class") && !entryName.startsWith("."))
+                {
+                    MCInjector.log.log(Level.INFO, "Processing " + entryName);
 
-            MCInjector.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
+                    entryData = this.process(entryData);
+                    entryData = this.processLVT(entryData);
 
-            try
-            {
+                    MCInjector.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
+                }
+                else
+                {
+                    MCInjector.log.log(Level.INFO, "Copying " + entryName);
+                }
+
                 ZipEntry newEntry = new ZipEntry(entryName);
                 outJar.putNextEntry(newEntry);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                return false;
-            }
-
-            try
-            {
                 outJar.write(entryData);
             }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
-        try
-        {
-            outJar.close();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            return false;
         }
         finally
         {
-            try
+            if (outJar != null)
             {
-                inJar.close();
+                try
+                {
+                    outJar.close();
+                }
+                catch (IOException e)
+                {
+                    // ignore
+                }
             }
-            catch (IOException e)
+
+            if (inJar != null)
             {
-                e.printStackTrace();
-                return false;
+                try
+                {
+                    inJar.close();
+                }
+                catch (IOException e)
+                {
+                    // ignore
+                }
             }
         }
-
-        return true;
     }
 
     public byte[] process(byte[] cls)
