@@ -9,6 +9,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -20,6 +22,7 @@ import java.util.zip.ZipOutputStream;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LabelNode;
@@ -181,8 +184,7 @@ public class MCInjector
                 {
                     MCInjector.log.log(Level.INFO, "Processing " + entryName);
 
-                    entryData = this.process(entryData);
-                    entryData = this.processLVT(entryData);
+                    entryData = this.processClass(entryData);
 
                     MCInjector.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
                 }
@@ -224,83 +226,22 @@ public class MCInjector
         }
     }
 
-    public byte[] process(byte[] cls)
+    public byte[] processClass(byte[] input)
     {
-        ClassReader cr = new ClassReader(cls);
-        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        ExceptorClassAdapter ca = new ExceptorClassAdapter(cw, this);
-        cr.accept(ca, 0);
-        return cw.toByteArray();
-    }
-
-    public byte[] processLVT(byte[] input)
-    {
-
         ClassReader reader = new ClassReader(input);
 
         ClassNode classNode = new ClassNode();
 
         reader.accept(classNode, 0);
 
-        for (MethodNode method : classNode.methods)
+        MCInjector.log.log(Level.FINE, "Class: " + classNode.name + " Extends: " + classNode.superName);
+
+        for (MethodNode methodNode : classNode.methods)
         {
-            MCInjector.log.log(Level.INFO, classNode.name + "." + method.name);
+            MCInjector.log.log(Level.FINER, "Name: " + methodNode.name + " Desc: " + methodNode.desc);
 
-            if (method.localVariables == null)
-            {
-                method.localVariables = new ArrayList<LocalVariableNode>();
-            }
-
-            if (method.localVariables.size() == 0)
-            {
-                int idxOffset = 0;
-                boolean addThis = false;
-                if ((method.access & Opcodes.ACC_STATIC) == 0)
-                {
-                    idxOffset = 1;
-                    addThis = true;
-                }
-
-                AbstractInsnNode tmp = method.instructions.getFirst();
-                if (tmp == null)
-                {
-                    method.instructions.add(new LabelNode());
-                }
-                else if (tmp.getType() != AbstractInsnNode.LABEL)
-                {
-                    method.instructions.insertBefore(tmp, new LabelNode());
-                }
-                LabelNode start = (LabelNode)method.instructions.getFirst();
-
-                tmp = method.instructions.getLast();
-                if (tmp == null)
-                {
-                    method.instructions.add(new LabelNode());
-                }
-                else if (tmp.getType() != AbstractInsnNode.LABEL)
-                {
-                    method.instructions.insert(tmp, new LabelNode());
-                }
-                LabelNode end = (LabelNode)method.instructions.getLast();
-
-                if (addThis)
-                {
-                    MCInjector.log.log(Level.INFO, "Naming argument 0 -> this L" + classNode.name + ";");
-                    method.localVariables.add(new LocalVariableNode("this", "L" + classNode.name + ";", null, start, end, 0));
-                }
-
-                String[] argTypes = MCInjector.splitArgTypes(null, method.desc);
-                for (int x = 0; x < argTypes.length; x++)
-                {
-                    String arg = "par" + (x + 1);
-                    MCInjector.log.log(Level.INFO, "Naming argument " + (x + idxOffset) + " -> " + arg + " " + argTypes[x]);
-                    method.localVariables.add(new LocalVariableNode(arg, argTypes[x], null, start, end, x + idxOffset));
-                }
-            }
-            else
-            {
-                MCInjector.log.log(Level.INFO, "LVT present");
-            }
+            List<String> exceptions = this.processExceptions(classNode, methodNode);
+            List<String> variables = this.processLVT(classNode, methodNode);
         }
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
@@ -309,45 +250,102 @@ public class MCInjector
         return writer.toByteArray();
     }
 
-    private static String[] splitArgTypes(String className, String desc)
+    private List<String> processExceptions(ClassNode classNode, MethodNode methodNode)
     {
-        ArrayList<String> parts = new ArrayList<String>();
-        if ((className != null) && (className.length() != 0))
+        String clsSig = classNode.name + "." + methodNode.name + methodNode.desc;
+
+        String excList = this.mappings.getProperty(clsSig);
+        if (excList != null)
         {
-            parts.add("L" + className + ";");
+            MCInjector.log.log(Level.FINE, "Adding Exceptions: " + excList + " to " + clsSig);
+            methodNode.exceptions = MCInjector.getExceptions(excList);
         }
-        int x = 1;
-        while (x < desc.length())
+
+        return methodNode.exceptions;
+    }
+
+    private static List<String> getExceptions(String exceptionList)
+    {
+        return Arrays.asList(exceptionList.split(","));
+    }
+
+    private List<String> processLVT(ClassNode classNode, MethodNode methodNode)
+    {
+        String clsSig = classNode.name + "." + methodNode.name + methodNode.desc;
+
+        if (methodNode.localVariables == null)
         {
-            switch (desc.charAt(x))
+            methodNode.localVariables = new ArrayList<LocalVariableNode>();
+        }
+
+        if (methodNode.localVariables.size() == 0)
+        {
+            int idxOffset = 0;
+            boolean addThis = false;
+            if ((methodNode.access & Opcodes.ACC_STATIC) == 0)
             {
-                case '[':
-                    if (desc.charAt(x + 1) == 'L')
-                    {
-                        int len = desc.indexOf(';', x + 1) + 1;
-                        parts.add(desc.substring(x, len));
-                        x = len;
-                    }
-                    else
-                    {
-                        parts.add(desc.substring(x, x + 2));
-                        x += 2;
-                    }
-                    break;
-                case 'L':
-                    int len = desc.indexOf(';', x) + 1;
-                    parts.add(desc.substring(x, len));
-                    x = len;
-                    break;
-                case ')':
-                    x = desc.length();
-                    break;
-                default:
-                    parts.add(desc.substring(x, x + 1));
-                    x++;
-                    break;
+                idxOffset = 1;
+                addThis = true;
+            }
+
+            // get first instruction, adding label if necessary
+            AbstractInsnNode tmp = methodNode.instructions.getFirst();
+            if (tmp == null)
+            {
+                methodNode.instructions.add(new LabelNode());
+            }
+            else if (tmp.getType() != AbstractInsnNode.LABEL)
+            {
+                methodNode.instructions.insertBefore(tmp, new LabelNode());
+            }
+            LabelNode start = (LabelNode)methodNode.instructions.getFirst();
+
+            // get last instruction, adding label if necessary
+            tmp = methodNode.instructions.getLast();
+            if (tmp == null)
+            {
+                methodNode.instructions.add(new LabelNode());
+            }
+            else if (tmp.getType() != AbstractInsnNode.LABEL)
+            {
+                methodNode.instructions.insert(tmp, new LabelNode());
+            }
+            LabelNode end = (LabelNode)methodNode.instructions.getLast();
+
+            Type[] argTypes = Type.getArgumentTypes(methodNode.desc);
+
+            if (addThis)
+            {
+                int index = 0;
+                String arg = "this";
+                String desc = "L" + classNode.name + ";";
+
+                MCInjector.log.log(Level.FINE, "Naming argument " + index + " -> " + arg + " " + desc);
+                methodNode.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, index));
+            }
+
+            for (int x = 0; x < argTypes.length; x++)
+            {
+                int index = x + idxOffset;
+                String arg = "par" + (x + 1);
+                String desc = argTypes[x].getDescriptor();
+
+                MCInjector.log.log(Level.FINE, "Naming argument " + index + " -> " + arg + " " + desc);
+                methodNode.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, index));
             }
         }
-        return parts.toArray(new String[0]);
+        else
+        {
+            MCInjector.log.log(Level.FINE, "LVT present");
+        }
+
+        List<String> variables = new ArrayList<String>();
+
+        for (LocalVariableNode lv : methodNode.localVariables)
+        {
+            variables.add(lv.name);
+        }
+
+        return variables;
     }
 }
