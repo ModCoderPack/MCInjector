@@ -8,7 +8,7 @@ public class MCInjector
 
         if (args.length < 3)
         {
-            System.out.println("MCInjector IN OUT MAPFILE [LOGFILE] [OUTMAP]");
+            System.out.println("MCInjector IN OUT MAPFILE [LOGFILE] [OUTMAP] [INDEX]");
             System.exit(1);
         }
 
@@ -25,10 +25,15 @@ public class MCInjector
         {
             outMapFile = args[4];
         }
+        int index = 0;
+        if (args.length > 5)
+        {
+            index = Integer.parseInt(args[5]);
+        }
 
         try
         {
-            MCInjectorImpl.process(inFile, outFile, mapFile, logFile, outMapFile);
+            MCInjectorImpl.process(inFile, outFile, mapFile, logFile, outMapFile, index);
         }
         catch (Exception e)
         {

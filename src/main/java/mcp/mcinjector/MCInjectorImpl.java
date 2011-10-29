@@ -39,8 +39,10 @@ public class MCInjectorImpl
     private final static Logger log = Logger.getLogger("MCInjector");
     public final Properties mappings = new Properties();
     public final Properties outMappings = new Properties();
+    public static int max_index = 0;
 
-    public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile) throws IOException
+    public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index)
+        throws IOException
     {
         MCInjectorImpl.log.setUseParentHandlers(false);
         MCInjectorImpl.log.setLevel(Level.ALL);
@@ -54,7 +56,7 @@ public class MCInjectorImpl
 
         MCInjectorImpl mci = new MCInjectorImpl();
         mci.loadMap(mapFile);
-        mci.processJar(inFile, outFile);
+        mci.processJar(inFile, outFile, index);
         if (outMapFile != null)
         {
             mci.saveMap(outMapFile);
@@ -97,7 +99,14 @@ public class MCInjectorImpl
         try
         {
             mapWriter = new FileWriter(mapFile);
-            this.outMappings.store(mapWriter, null);
+            if (MCInjectorImpl.max_index > 0)
+            {
+                this.outMappings.store(mapWriter, "max index=" + MCInjectorImpl.max_index);
+            }
+            else
+            {
+                this.outMappings.store(mapWriter, null);
+            }
         }
         catch (IOException e)
         {
@@ -119,7 +128,7 @@ public class MCInjectorImpl
         }
     }
 
-    public void processJar(String inFile, String outFile) throws IOException
+    public void processJar(String inFile, String outFile, int index) throws IOException
     {
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
@@ -180,7 +189,7 @@ public class MCInjectorImpl
                 {
                     MCInjectorImpl.log.log(Level.INFO, "Processing " + entryName);
 
-                    entryData = this.processClass(entryData);
+                    entryData = this.processClass(entryData, index);
 
                     MCInjectorImpl.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
                 }
@@ -222,7 +231,7 @@ public class MCInjectorImpl
         }
     }
 
-    public byte[] processClass(byte[] input)
+    public byte[] processClass(byte[] input, int index)
     {
         ClassReader reader = new ClassReader(input);
 
@@ -257,8 +266,8 @@ public class MCInjectorImpl
 
             try
             {
-                String exceptions = MCInjectorImpl.processExceptions(classNode, methodNode, excList);
-                String parameters = MCInjectorImpl.processLVT(classNode, methodNode, parList);
+                String exceptions = MCInjectorImpl.processExceptions(classNode, methodNode, excList, index);
+                String parameters = MCInjectorImpl.processLVT(classNode, methodNode, parList, index);
                 this.outMappings.setProperty(clsSig, exceptions + "|" + parameters);
             }
             catch (RuntimeException e)
@@ -273,7 +282,7 @@ public class MCInjectorImpl
         return writer.toByteArray();
     }
 
-    public static String processExceptions(ClassNode classNode, MethodNode methodNode, String excList)
+    public static String processExceptions(ClassNode classNode, MethodNode methodNode, String excList, int index)
     {
         if (methodNode.exceptions == null)
         {
@@ -291,6 +300,15 @@ public class MCInjectorImpl
                 exceptions = StringUtil.splitString(excList, ",");
             }
         }
+        else if (index > 0)
+        {
+            // we aren't autogenerating exceptions yet
+
+            if (MCInjectorImpl.max_index < index)
+            {
+                MCInjectorImpl.max_index = index;
+            }
+        }
 
         if (exceptions != null)
         {
@@ -301,7 +319,7 @@ public class MCInjectorImpl
         return StringUtil.joinString(methodNode.exceptions, ",");
     }
 
-    public static String processLVT(ClassNode classNode, MethodNode methodNode, String parList)
+    public static String processLVT(ClassNode classNode, MethodNode methodNode, String parList, int index)
     {
         if (methodNode.localVariables == null)
         {
@@ -331,13 +349,20 @@ public class MCInjectorImpl
                 argNames.addAll(StringUtil.splitString(parList, ","));
             }
         }
-        else
+        else if (index > 0)
         {
-            doLVT = true;
+            // generate a new parameter list based on class and method name
 
             for (int x = idxOffset; x < argTypes.size(); x++)
             {
                 argNames.add("par" + x);
+            }
+
+            doLVT = true;
+
+            if (MCInjectorImpl.max_index < index)
+            {
+                MCInjectorImpl.max_index = index;
             }
         }
 
