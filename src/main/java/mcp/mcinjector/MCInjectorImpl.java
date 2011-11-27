@@ -41,18 +41,23 @@ public class MCInjectorImpl
 {
     private final static Logger log = Logger.getLogger("MCInjector");
     public final Properties mappings = new Properties();
-    public final Properties outMappings = new Properties(){
-    	private static final long serialVersionUID = 4112578634029874840L;
-    	@SuppressWarnings({"unchecked", "rawtypes"})
-	    public synchronized Enumeration keys() {
-	        Enumeration keysEnum = super.keys();
-	        Vector keyList = new Vector();
-	        while(keysEnum.hasMoreElements()){
-	          keyList.add(keysEnum.nextElement());
-	        }
-	        Collections.sort(keyList);
-	        return keyList.elements();
-	     }
+    public final Properties outMappings = new Properties()
+    {
+        private static final long serialVersionUID = 4112578634029874840L;
+
+        @Override
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        public synchronized Enumeration keys()
+        {
+            Enumeration keysEnum = super.keys();
+            Vector keyList = new Vector();
+            while (keysEnum.hasMoreElements())
+            {
+                keyList.add(keysEnum.nextElement());
+            }
+            Collections.sort(keyList);
+            return keyList.elements();
+        }
     };
     private int initIndex = 0;
 
@@ -76,14 +81,13 @@ public class MCInjectorImpl
         {
             mci.saveMap(outMapFile);
         }
-        
-        
+
         System.out.println("Processed " + inFile);
     }
-    
+
     private MCInjectorImpl(int index)
     {
-    	this.initIndex = index;
+        this.initIndex = index;
     }
 
     public void loadMap(String mapFile) throws IOException
@@ -287,12 +291,12 @@ public class MCInjectorImpl
 
             try
             {
-                String exceptions = processExceptions(classNode, methodNode, excList);
-                String parameters = processLVT(classNode, methodNode, parList);
-                
-                if (exceptions.length() > 0 || parameters.length() > 0)
+                String exceptions = this.processExceptions(classNode, methodNode, excList);
+                String parameters = this.processLVT(classNode, methodNode, parList);
+
+                if ((exceptions.length() > 0) || (parameters.length() > 0))
                 {
-                	this.outMappings.setProperty(clsSig, exceptions + "|" + parameters);
+                    this.outMappings.setProperty(clsSig, exceptions + "|" + parameters);
                 }
             }
             catch (RuntimeException e)
@@ -341,7 +345,7 @@ public class MCInjectorImpl
 
     public String processLVT(ClassNode classNode, MethodNode methodNode, String parList)
     {
-        
+
         if (methodNode.localVariables == null)
         {
             methodNode.localVariables = new ArrayList<LocalVariableNode>();
@@ -373,29 +377,31 @@ public class MCInjectorImpl
         else if (this.initIndex > 0)
         {
             // generate a new parameter list based on class and method name
-        	if (methodNode.name.matches("func_\\d+_.+")){
-        		String funcId = methodNode.name.substring(5, methodNode.name.indexOf('_', 5));
-        		for (int x = idxOffset; x < argTypes.size(); x++)
-        		{
-        			argNames.add(String.format("p_%s_%d_", funcId, x));
-        		}
-        	}
-        	else if (methodNode.name.equals("<init>") 
-        			&& classNode.name.startsWith("net/minecraft/")) // Limit to MineCraft namespace because we don't care about libraries
-        	{
-		        for (int x = idxOffset; x < argTypes.size(); x++)
-		        {
-		            argNames.add(String.format("p_i%d_%d_", this.initIndex, x));
-		        }
-    			this.initIndex++;
-        	}
-        	else //functions like equals/valueOf/toString and things outside the net/minecraft namespace
-        	{
-		        for (int x = idxOffset; x < argTypes.size(); x++)
-		        {
-		            argNames.add("par" + x);
-		        }
-        	}
+            if (methodNode.name.matches("func_\\d+_.+"))
+            {
+                String funcId = methodNode.name.substring(5, methodNode.name.indexOf('_', 5));
+                for (int x = idxOffset; x < argTypes.size(); x++)
+                {
+                    argNames.add(String.format("p_%s_%d_", funcId, x));
+                }
+            }
+            // Limit to MineCraft namespace because we don't care about libraries
+            else if (methodNode.name.equals("<init>") && classNode.name.startsWith("net/minecraft/"))
+            {
+                for (int x = idxOffset; x < argTypes.size(); x++)
+                {
+                    argNames.add(String.format("p_i%d_%d_", this.initIndex, x));
+                }
+                this.initIndex++;
+            }
+            // functions like equals/valueOf/toString and things outside the net/minecraft namespace
+            else
+            {
+                for (int x = idxOffset; x < argTypes.size(); x++)
+                {
+                    argNames.add("par" + x);
+                }
+            }
 
             doLVT = true;
         }
@@ -458,11 +464,11 @@ public class MCInjectorImpl
 
         if (classNode.name.startsWith("net/minecraft/"))
         {
-        	return StringUtil.joinString(variables, ",");
+            return StringUtil.joinString(variables, ",");
         }
         else
         {
-        	return "";
+            return "";
         }
     }
 }
