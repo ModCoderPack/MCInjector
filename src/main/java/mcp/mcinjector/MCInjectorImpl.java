@@ -13,8 +13,11 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
+import java.util.Vector;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,8 +41,20 @@ public class MCInjectorImpl
 {
     private final static Logger log = Logger.getLogger("MCInjector");
     public final Properties mappings = new Properties();
-    public final Properties outMappings = new Properties();
-    public static int max_index = 0;
+    public final Properties outMappings = new Properties(){
+    	private static final long serialVersionUID = 4112578634029874840L;
+    	@SuppressWarnings({"unchecked", "rawtypes"})
+	    public synchronized Enumeration keys() {
+	        Enumeration keysEnum = super.keys();
+	        Vector keyList = new Vector();
+	        while(keysEnum.hasMoreElements()){
+	          keyList.add(keysEnum.nextElement());
+	        }
+	        Collections.sort(keyList);
+	        return keyList.elements();
+	     }
+    };
+    private int initIndex = 0;
 
     public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index)
         throws IOException
@@ -54,15 +69,21 @@ public class MCInjectorImpl
             MCInjectorImpl.log.addHandler(filehandler);
         }
 
-        MCInjectorImpl mci = new MCInjectorImpl();
+        MCInjectorImpl mci = new MCInjectorImpl(index);
         mci.loadMap(mapFile);
-        mci.processJar(inFile, outFile, index);
+        mci.processJar(inFile, outFile);
         if (outMapFile != null)
         {
             mci.saveMap(outMapFile);
         }
-
+        
+        
         System.out.println("Processed " + inFile);
+    }
+    
+    private MCInjectorImpl(int index)
+    {
+    	this.initIndex = index;
     }
 
     public void loadMap(String mapFile) throws IOException
@@ -99,9 +120,9 @@ public class MCInjectorImpl
         try
         {
             mapWriter = new FileWriter(mapFile);
-            if (MCInjectorImpl.max_index > 0)
+            if (this.initIndex > 0)
             {
-                this.outMappings.store(mapWriter, "max index=" + MCInjectorImpl.max_index);
+                this.outMappings.store(mapWriter, "max index=" + this.initIndex);
             }
             else
             {
@@ -128,7 +149,7 @@ public class MCInjectorImpl
         }
     }
 
-    public void processJar(String inFile, String outFile, int index) throws IOException
+    public void processJar(String inFile, String outFile) throws IOException
     {
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
@@ -189,7 +210,7 @@ public class MCInjectorImpl
                 {
                     MCInjectorImpl.log.log(Level.INFO, "Processing " + entryName);
 
-                    entryData = this.processClass(entryData, index);
+                    entryData = this.processClass(entryData);
 
                     MCInjectorImpl.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
                 }
@@ -231,7 +252,7 @@ public class MCInjectorImpl
         }
     }
 
-    public byte[] processClass(byte[] input, int index)
+    public byte[] processClass(byte[] input)
     {
         ClassReader reader = new ClassReader(input);
 
@@ -266,9 +287,13 @@ public class MCInjectorImpl
 
             try
             {
-                String exceptions = MCInjectorImpl.processExceptions(classNode, methodNode, excList, index);
-                String parameters = MCInjectorImpl.processLVT(classNode, methodNode, parList, index);
-                this.outMappings.setProperty(clsSig, exceptions + "|" + parameters);
+                String exceptions = processExceptions(classNode, methodNode, excList);
+                String parameters = processLVT(classNode, methodNode, parList);
+                
+                if (exceptions.length() > 0 || parameters.length() > 0)
+                {
+                	this.outMappings.setProperty(clsSig, exceptions + "|" + parameters);
+                }
             }
             catch (RuntimeException e)
             {
@@ -282,7 +307,7 @@ public class MCInjectorImpl
         return writer.toByteArray();
     }
 
-    public static String processExceptions(ClassNode classNode, MethodNode methodNode, String excList, int index)
+    public String processExceptions(ClassNode classNode, MethodNode methodNode, String excList)
     {
         if (methodNode.exceptions == null)
         {
@@ -300,14 +325,9 @@ public class MCInjectorImpl
                 exceptions = StringUtil.splitString(excList, ",");
             }
         }
-        else if (index > 0)
+        else if (this.initIndex > 0)
         {
             // we aren't autogenerating exceptions yet
-
-            if (MCInjectorImpl.max_index < index)
-            {
-                MCInjectorImpl.max_index = index;
-            }
         }
 
         if (exceptions != null)
@@ -319,8 +339,9 @@ public class MCInjectorImpl
         return StringUtil.joinString(methodNode.exceptions, ",");
     }
 
-    public static String processLVT(ClassNode classNode, MethodNode methodNode, String parList, int index)
+    public String processLVT(ClassNode classNode, MethodNode methodNode, String parList)
     {
+        
         if (methodNode.localVariables == null)
         {
             methodNode.localVariables = new ArrayList<LocalVariableNode>();
@@ -349,21 +370,34 @@ public class MCInjectorImpl
                 argNames.addAll(StringUtil.splitString(parList, ","));
             }
         }
-        else if (index > 0)
+        else if (this.initIndex > 0)
         {
             // generate a new parameter list based on class and method name
-
-            for (int x = idxOffset; x < argTypes.size(); x++)
-            {
-                argNames.add("par" + x);
-            }
+        	if (methodNode.name.matches("func_\\d+_.+")){
+        		String funcId = methodNode.name.substring(5, methodNode.name.indexOf('_', 5));
+        		for (int x = idxOffset; x < argTypes.size(); x++)
+        		{
+        			argNames.add(String.format("p_%s_%d_", funcId, x));
+        		}
+        	}
+        	else if (methodNode.name.equals("<init>") 
+        			&& classNode.name.startsWith("net/minecraft/")) // Limit to MineCraft namespace because we don't care about libraries
+        	{
+		        for (int x = idxOffset; x < argTypes.size(); x++)
+		        {
+		            argNames.add(String.format("p_i%d_%d_", this.initIndex, x));
+		        }
+    			this.initIndex++;
+        	}
+        	else //functions like equals/valueOf/toString and things outside the net/minecraft namespace
+        	{
+		        for (int x = idxOffset; x < argTypes.size(); x++)
+		        {
+		            argNames.add("par" + x);
+		        }
+        	}
 
             doLVT = true;
-
-            if (MCInjectorImpl.max_index < index)
-            {
-                MCInjectorImpl.max_index = index;
-            }
         }
 
         if (doLVT)
@@ -422,6 +456,13 @@ public class MCInjectorImpl
             }
         }
 
-        return StringUtil.joinString(variables, ",");
+        if (classNode.name.startsWith("net/minecraft/"))
+        {
+        	return StringUtil.joinString(variables, ",");
+        }
+        else
+        {
+        	return "";
+        }
     }
 }
