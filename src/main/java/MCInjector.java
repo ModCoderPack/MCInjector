@@ -4,11 +4,24 @@ public class MCInjector
 {
     public static void main(String[] args) throws Exception
     {
-        System.out.println("MCInjector v2.0 by Searge, LexManos, Fesh0r");
-
         if (args.length < 3)
         {
-            System.out.println("MCInjector IN OUT MAPFILE [LOGFILE] [OUTMAP] [INDEX]");
+            if (args.length > 0)
+            {
+                if (args[0].equalsIgnoreCase("-help") || args[0].equalsIgnoreCase("--help"))
+                {
+                    MCInjector.showUsage();
+                    System.exit(0);
+                }
+
+                if (args[0].equalsIgnoreCase("-version") || args[0].equalsIgnoreCase("--version"))
+                {
+                    MCInjector.showVersion();
+                    System.exit(0);
+                }
+            }
+
+            MCInjector.showUsage();
             System.exit(1);
         }
 
@@ -41,5 +54,16 @@ public class MCInjector
             e.printStackTrace();
             System.exit(1);
         }
+    }
+
+    private static void showUsage()
+    {
+        MCInjector.showVersion();
+        System.err.println("MCInjector IN OUT MAPFILE [LOGFILE] [OUTMAP] [INDEX]");
+    }
+
+    private static void showVersion()
+    {
+        System.err.println("MCInjector v2.0 by Searge, LexManos, Fesh0r");
     }
 }
