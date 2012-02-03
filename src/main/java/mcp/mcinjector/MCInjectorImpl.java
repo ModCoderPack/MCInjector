@@ -388,11 +388,14 @@ public class MCInjectorImpl
             // Limit to MineCraft namespace because we don't care about libraries
             else if (methodNode.name.equals("<init>") && classNode.name.startsWith("net/minecraft/"))
             {
-                for (int x = idxOffset; x < argTypes.size(); x++)
+                if (argTypes.size() > idxOffset)
                 {
-                    argNames.add(String.format("p_i%d_%d_", this.initIndex, x));
-                }
-                this.initIndex++;
+                    for (int x = idxOffset; x < argTypes.size(); x++)
+                    {
+                        argNames.add(String.format("p_i%d_%d_", this.initIndex, x));
+                    }
+                    this.initIndex++;
+                }    
             }
             // functions like equals/valueOf/toString and things outside the net/minecraft namespace
             else
