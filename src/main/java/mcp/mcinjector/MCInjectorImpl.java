@@ -408,6 +408,16 @@ public class MCInjectorImpl
 
             doLVT = true;
         }
+        else if (this.initIndex < 0)
+        {
+        	// generate standard parameters everywhere, used for official mappings, where we don't have unique method names
+            for (int x = idxOffset; x < argTypes.size(); x++)
+            {
+                argNames.add("par" + x);
+            }
+
+            doLVT = true;
+        }
 
         if (doLVT)
         {
