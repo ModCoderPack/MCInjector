@@ -385,7 +385,7 @@ public class MCInjectorImpl
                     argNames.add(String.format("p_%s_%d_", funcId, x));
                 }
             }
-            // Limit to MineCraft namespace because we don't care about libraries
+            // Limit to net/minecraft package because we don't care about libraries
             else if (methodNode.name.equals("<init>") && classNode.name.startsWith("net/minecraft/"))
             {
                 if (argTypes.size() > idxOffset)
@@ -395,9 +395,17 @@ public class MCInjectorImpl
                         argNames.add(String.format("p_i%d_%d_", this.initIndex, x));
                     }
                     this.initIndex++;
-                }    
+                }
             }
-            // functions like equals/valueOf/toString and things outside the net/minecraft namespace
+            // any inherited methods in the net/minecraft package
+            else if (classNode.name.startsWith("net/minecraft/"))
+            {
+                for (int x = idxOffset; x < argTypes.size(); x++)
+                {
+                    argNames.add(String.format("p_%s_%d_", methodNode.name, x));
+                }
+            }
+            // everything else outside the net/minecraft package
             else
             {
                 for (int x = idxOffset; x < argTypes.size(); x++)
