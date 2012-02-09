@@ -380,9 +380,14 @@ public class MCInjectorImpl
             if (methodNode.name.matches("func_\\d+_.+"))
             {
                 String funcId = methodNode.name.substring(5, methodNode.name.indexOf('_', 5));
-                for (int x = idxOffset; x < argTypes.size(); x++)
+                for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
                 {
-                    argNames.add(String.format("p_%s_%d_", funcId, x));
+                    argNames.add(String.format("p_%s_%d_", funcId, y));
+                    String desc = argTypes.get(x).getDescriptor();
+                    if (desc.equals("J") || desc.equals("D"))
+                    {
+                        y++;
+                    }
                 }
             }
             // Limit to net/minecraft package because we don't care about libraries
@@ -390,9 +395,14 @@ public class MCInjectorImpl
             {
                 if (argTypes.size() > idxOffset)
                 {
-                    for (int x = idxOffset; x < argTypes.size(); x++)
+                    for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
                     {
-                        argNames.add(String.format("p_i%d_%d_", this.initIndex, x));
+                        argNames.add(String.format("p_i%d_%d_", this.initIndex, y));
+                        String desc = argTypes.get(x).getDescriptor();
+                        if (desc.equals("J") || desc.equals("D"))
+                        {
+                            y++;
+                        }
                     }
                     this.initIndex++;
                 }
@@ -400,17 +410,27 @@ public class MCInjectorImpl
             // any inherited methods in the net/minecraft package
             else if (classNode.name.startsWith("net/minecraft/"))
             {
-                for (int x = idxOffset; x < argTypes.size(); x++)
+                for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
                 {
-                    argNames.add(String.format("p_%s_%d_", methodNode.name, x));
+                    argNames.add(String.format("p_%s_%d_", methodNode.name, y));
+                    String desc = argTypes.get(x).getDescriptor();
+                    if (desc.equals("J") || desc.equals("D"))
+                    {
+                        y++;
+                    }
                 }
             }
             // everything else outside the net/minecraft package
             else
             {
-                for (int x = idxOffset; x < argTypes.size(); x++)
+                for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
                 {
-                    argNames.add("par" + x);
+                    argNames.add("par" + y);
+                    String desc = argTypes.get(x).getDescriptor();
+                    if (desc.equals("J") || desc.equals("D"))
+                    {
+                        y++;
+                    }
                 }
             }
 
@@ -418,10 +438,15 @@ public class MCInjectorImpl
         }
         else if (this.initIndex < 0)
         {
-        	// generate standard parameters everywhere, used for official mappings, where we don't have unique method names
-            for (int x = idxOffset; x < argTypes.size(); x++)
+            // generate standard parameters everywhere, used for official mappings, where we don't have unique method names
+            for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
             {
-                argNames.add("par" + x);
+                argNames.add("par" + y);
+                String desc = argTypes.get(x).getDescriptor();
+                if (desc.equals("J") || desc.equals("D"))
+                {
+                    y++;
+                }
             }
 
             doLVT = true;
@@ -460,13 +485,17 @@ public class MCInjectorImpl
 
             methodNode.localVariables = new ArrayList<LocalVariableNode>();
 
-            for (int x = 0; x < argNames.size(); x++)
+            for (int x = 0, y = x; x < argNames.size(); x++, y++)
             {
                 String arg = argNames.get(x);
                 String desc = argTypes.get(x).getDescriptor();
 
-                MCInjectorImpl.log.log(Level.FINE, "Naming argument " + x + " -> " + arg + " " + desc);
-                methodNode.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, x));
+                MCInjectorImpl.log.log(Level.FINE, "Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
+                methodNode.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, y));
+                if (desc.equals("J") || desc.equals("D"))
+                {
+                    y++;
+                }
             }
         }
 
