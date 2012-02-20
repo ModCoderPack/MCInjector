@@ -15,7 +15,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.logging.FileHandler;
@@ -301,7 +303,7 @@ public class MCInjectorImpl
             }
             catch (RuntimeException e)
             {
-                throw new RuntimeException(e.getMessage() + " in " + clsSig);
+                throw new RuntimeException(clsSig, e);
             }
         }
 
@@ -345,6 +347,11 @@ public class MCInjectorImpl
 
     public String processLVT(ClassNode classNode, MethodNode methodNode, String parList)
     {
+        // abstract and native methods don't have a Code attribute
+        if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0 || (methodNode.access & Opcodes.ACC_NATIVE) != 0)
+        {
+            return "";
+        }
 
         if (methodNode.localVariables == null)
         {
@@ -490,8 +497,15 @@ public class MCInjectorImpl
                 String arg = argNames.get(x);
                 String desc = argTypes.get(x).getDescriptor();
 
-                MCInjectorImpl.log.log(Level.FINE, "Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
-                methodNode.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, y));
+                if (arg.equals(""))
+                {
+                    MCInjectorImpl.log.log(Level.FINE, "Skipping argument " + x + " (" + y + ") -> " + desc);
+                }
+                else
+                {
+                    MCInjectorImpl.log.log(Level.FINE, "Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
+                    methodNode.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, y));
+                }
                 if (desc.equals("J") || desc.equals("D"))
                 {
                     y++;
@@ -500,14 +514,32 @@ public class MCInjectorImpl
         }
 
         List<String> variables = new ArrayList<String>();
+        Map<Integer, String> lvIndex = new HashMap<Integer, String>();
 
         if (methodNode.localVariables != null)
         {
+            // localVariables isn't ordered by index, so pull all names into a Map
             for (LocalVariableNode lv : methodNode.localVariables)
             {
-                if (!lv.name.equals("this"))
+                lvIndex.put(lv.index, lv.name);
+            }
+
+            // we don't want 'this'
+            if (argTypes.size() > idxOffset)
+            {
+                for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
                 {
-                    variables.add(lv.name);
+                    String name = lvIndex.get(y);
+                    if (name == null)
+                    {
+                        name = "";
+                    }
+                    variables.add(name);
+                    String desc = argTypes.get(x).getDescriptor();
+                    if (desc.equals("J") || desc.equals("D"))
+                    {
+                        y++;
+                    }
                 }
             }
         }
