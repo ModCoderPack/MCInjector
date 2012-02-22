@@ -64,6 +64,6 @@ public class MCInjector
 
     private static void showVersion()
     {
-        System.err.println("MCInjector v2.7 by Searge, LexManos, Fesh0r");
+        System.err.println("MCInjector v2.8 by Searge, LexManos, Fesh0r");
     }
 }

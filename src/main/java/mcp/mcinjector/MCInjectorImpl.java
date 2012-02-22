@@ -297,7 +297,7 @@ public class MCInjectorImpl
                 String exceptions = this.processExceptions(classNode, methodNode, excList);
                 String parameters = this.processLVT(classNode, methodNode, parList);
 
-                if ((exceptions.length() > 0) || (parameters.length() > 0))
+                if ((exceptions.length() > 0) || (parameters != null))
                 {
                     this.outMappings.setProperty(clsSig, exceptions + "|" + parameters);
                 }
@@ -348,10 +348,16 @@ public class MCInjectorImpl
 
     public String processLVT(ClassNode classNode, MethodNode methodNode, String parList)
     {
+        // ignore sound libraries
+        if (classNode.name.startsWith("paulscode/") || classNode.name.startsWith("com/jcraft/"))
+        {
+            return null;
+        }
+
         // abstract and native methods don't have a Code attribute
         if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0 || (methodNode.access & Opcodes.ACC_NATIVE) != 0)
         {
-            return "";
+            return null;
         }
 
         if (methodNode.localVariables == null)
@@ -398,8 +404,7 @@ public class MCInjectorImpl
                     }
                 }
             }
-            // Limit to net/minecraft package because we don't care about libraries
-            else if (methodNode.name.equals("<init>") && classNode.name.startsWith("net/minecraft/"))
+            else if (methodNode.name.equals("<init>"))
             {
                 if (argTypes.size() > idxOffset)
                 {
@@ -415,25 +420,11 @@ public class MCInjectorImpl
                     this.initIndex++;
                 }
             }
-            // any inherited methods in the net/minecraft package
-            else if (classNode.name.startsWith("net/minecraft/"))
-            {
-                for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
-                {
-                    argNames.add(String.format("p_%s_%d_", methodNode.name, y));
-                    String desc = argTypes.get(x).getDescriptor();
-                    if (desc.equals("J") || desc.equals("D"))
-                    {
-                        y++;
-                    }
-                }
-            }
-            // everything else outside the net/minecraft package
             else
             {
                 for (int x = idxOffset, y = x; x < argTypes.size(); x++, y++)
                 {
-                    argNames.add("par" + y);
+                    argNames.add(String.format("p_%s_%d_", methodNode.name, y));
                     String desc = argTypes.get(x).getDescriptor();
                     if (desc.equals("J") || desc.equals("D"))
                     {
@@ -545,13 +536,6 @@ public class MCInjectorImpl
             }
         }
 
-        if (classNode.name.startsWith("net/minecraft/"))
-        {
-            return StringUtil.joinString(variables, ",");
-        }
-        else
-        {
-            return "";
-        }
+        return StringUtil.joinString(variables, ",");
     }
 }
