@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class StringUtil
 {
@@ -19,7 +20,7 @@ public class StringUtil
             return null;
         }
 
-        List<String> out = new ArrayList<String>(Arrays.asList(in.split("\\" + delimiter)));
+        List<String> out = new ArrayList<String>(Arrays.asList(in.split(Pattern.quote(delimiter), limit)));
 
         while (out.size() < limit)
         {

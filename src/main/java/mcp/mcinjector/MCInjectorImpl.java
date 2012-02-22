@@ -280,7 +280,8 @@ public class MCInjectorImpl
             String curMap = this.mappings.getProperty(clsSig);
             if (curMap != null)
             {
-                List<String> splitMap = StringUtil.splitString(curMap, "|");
+                // -1 so trailing empty strings don't get stripped
+                List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
 
                 excList = splitMap.get(0);
 
