@@ -360,6 +360,12 @@ public class MCInjectorImpl
             return null;
         }
 
+        // static class initilizer
+        if (methodNode.name.equals("<clinit>"))
+        {
+            return null;
+        }
+
         if (methodNode.localVariables == null)
         {
             methodNode.localVariables = new ArrayList<LocalVariableNode>();
