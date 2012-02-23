@@ -299,6 +299,10 @@ public class MCInjectorImpl
 
                 if ((exceptions.length() > 0) || (parameters != null))
                 {
+                    if (parameters == null)
+                    {
+                        parameters = "";
+                    }
                     this.outMappings.setProperty(clsSig, exceptions + "|" + parameters);
                 }
             }
