@@ -358,16 +358,17 @@ public class MCInjectorImpl
             return null;
         }
 
-        // abstract and native methods don't have a Code attribute
-        if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0 || (methodNode.access & Opcodes.ACC_NATIVE) != 0)
-        {
-            return null;
-        }
-
         // static class initilizer
         if (methodNode.name.equals("<clinit>"))
         {
             return null;
+        }
+
+        // abstract and native methods don't have a Code attribute
+        // return an empty string instead of null so they still end up in the exc file
+        if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0 || (methodNode.access & Opcodes.ACC_NATIVE) != 0)
+        {
+            return "";
         }
 
         if (methodNode.localVariables == null)
