@@ -1,7 +1,15 @@
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import mcp.mcinjector.LogFormatter;
 import mcp.mcinjector.MCInjectorImpl;
 
 public class MCInjector
 {
+    private final static Logger log = Logger.getLogger("MCInjector");
+	public static final String VERSION = "MCInjector v2.8 by Searge, LexManos, Fesh0r";
+	
     public static void main(String[] args) throws Exception
     {
         if (args.length < 3)
@@ -16,7 +24,7 @@ public class MCInjector
 
                 if (args[0].equalsIgnoreCase("-version") || args[0].equalsIgnoreCase("--version"))
                 {
-                    MCInjector.showVersion();
+                    System.out.println(MCInjector.VERSION);
                     System.exit(0);
                 }
             }
@@ -27,26 +35,33 @@ public class MCInjector
 
         String inFile = args[0];
         String outFile = args[1];
-        String mapFile = args[2];
-        String logFile = null;
-        if (args.length > 3)
+        String inMapFile = args[2];
+        String logFile = (args.length > 3 ? args[3] : null);
+        String outMapFile = (args.length > 4 ? args[4] : null);
+        int index = (args.length > 5 ? Integer.parseInt(args[5]) : 0);
+
+        MCInjector.log.setUseParentHandlers(false);
+        MCInjector.log.setLevel(Level.ALL);
+
+        if (logFile != null)
         {
-            logFile = args[3];
+            FileHandler filehandler = new FileHandler(logFile);
+            filehandler.setFormatter(new LogFormatter());
+            MCInjector.log.addHandler(filehandler);
         }
-        String outMapFile = null;
-        if (args.length > 4)
-        {
-            outMapFile = args[4];
-        }
-        int index = 0;
-        if (args.length > 5)
-        {
-            index = Integer.parseInt(args[5]);
-        }
+
+        System.out.println(MCInjector.VERSION);
+        MCInjector.log.info(MCInjector.VERSION);
+        MCInjector.log.info("Input: "          + inFile);
+        MCInjector.log.info("Output: "         + outFile);
+        MCInjector.log.info("Log: "            + logFile);
+        MCInjector.log.info("MappingsInput: "  + inMapFile);
+        MCInjector.log.info("MappingsOutput: " + outMapFile);
+        MCInjector.log.info("Mappings: "       + index);
 
         try
         {
-            MCInjectorImpl.process(inFile, outFile, mapFile, logFile, outMapFile, index);
+            MCInjectorImpl.process(inFile, outFile, inMapFile, logFile, outMapFile, index);
         }
         catch (Exception e)
         {
@@ -58,12 +73,7 @@ public class MCInjector
 
     private static void showUsage()
     {
-        MCInjector.showVersion();
+        System.err.println(MCInjector.VERSION);
         System.err.println("MCInjector IN OUT MAPFILE [LOGFILE] [OUTMAP] [INDEX]");
-    }
-
-    private static void showVersion()
-    {
-        System.err.println("MCInjector v2.8 by Searge, LexManos, Fesh0r");
     }
 }
