@@ -121,7 +121,8 @@ public class GenerateMapClassAdapter extends ClassVisitor
             if (types.size() > idx)
             {
             	int conID = -1;
-            	String tmp = mci.getParams(clsSig).get(0);
+            	List<String> old = mci.getParams(clsSig);
+            	String tmp = (old.size() > 0 ? old.get(0) : "");
             	if (tmp.matches("p_i\\d+_\\d+_"))
             	{
             		conID = Integer.parseInt(tmp.substring(3, tmp.indexOf('_', 3)));

@@ -8,7 +8,7 @@ import mcp.mcinjector.MCInjectorImpl;
 public class MCInjector
 {
     private final static Logger log = Logger.getLogger("MCInjector");
-	public static final String VERSION = "MCInjector v2.8 by Searge, LexManos, Fesh0r";
+	public static final String VERSION = "MCInjector v3.0 by Searge, LexManos, Fesh0r";
 	
     public static void main(String[] args) throws Exception
     {
