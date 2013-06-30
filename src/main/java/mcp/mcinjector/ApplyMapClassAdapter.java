@@ -43,25 +43,25 @@ public class ApplyMapClassAdapter extends ClassVisitor
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions)
     {
+        // static constructors
+        if (name.equals("<clinit>"))
+        {
+            return super.visitMethod(access, name, desc, signature, exceptions);
+        }
+        
         if (!mci.generate) log.log(Level.FINER, "  Name: " + name + " Desc: " + desc + " Sig: " + signature);
 
         String clsSig = this.className + "." + name + desc;
         
         exceptions = processExceptions(clsSig, exceptions);
 
-        MethodNode mn = (MethodNode)cn.visitMethod(access, name, desc, signature, exceptions);
-        
-        if (name.equals("<clinit>"))
-        {
-            return mn;
-        }
-
         // abstract and native methods don't have a Code attribute
         if ((access & Opcodes.ACC_ABSTRACT) != 0 || (access & Opcodes.ACC_NATIVE) != 0)
         {
-            return mn;
+            return super.visitMethod(access, name, desc, signature, exceptions);
         }
-        
+
+        MethodNode mn = (MethodNode)cn.visitMethod(access, name, desc, signature, exceptions);
         mn = processLVT(className, clsSig, mn);
         return mn;
     }

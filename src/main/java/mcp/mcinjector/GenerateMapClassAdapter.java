@@ -36,14 +36,15 @@ public class GenerateMapClassAdapter extends ClassVisitor
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions)
     {
-        log.log(Level.FINE, "  Name: " + name + " Desc: " + desc + " Sig: " + signature);
-        String clsSig = this.className + "." + name + desc;
-        
-        // ignore libraries and static constructors
-        if (!className.startsWith("net/minecraft/") || name.equals("<clinit>"))
+        // ignore static constructors
+        if (name.equals("<clinit>"))
         {
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
+        
+        log.log(Level.FINE, "  Name: " + name + " Desc: " + desc + " Sig: " + signature);
+        String clsSig = this.className + "." + name + desc;
+        
 
         // abstract and native methods don't have a Code attribute
         //if ((access & Opcodes.ACC_ABSTRACT) != 0 || (access & Opcodes.ACC_NATIVE) != 0)

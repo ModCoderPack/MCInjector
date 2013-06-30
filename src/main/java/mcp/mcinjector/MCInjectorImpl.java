@@ -84,7 +84,7 @@ public class MCInjectorImpl
             this.mappings.load(mapReader);
             if (initIndex == 0)
             {
-            	initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "10000"));
+            	initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "1000"));
             	log.info("Loaded Max Constructor Index: " + initIndex);
             }
         }
@@ -241,7 +241,7 @@ public class MCInjectorImpl
 
                 String entryName = entry.getName();
 
-                if (entryName.endsWith(".class") && !entryName.startsWith("."))
+                if (entryName.endsWith(".class") && entryName.startsWith("net/minecraft/") )
                 {
                     MCInjectorImpl.log.log(Level.INFO, "Processing " + entryName);
 
