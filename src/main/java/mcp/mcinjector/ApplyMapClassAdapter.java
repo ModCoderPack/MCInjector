@@ -103,7 +103,7 @@ public class ApplyMapClassAdapter extends ClassVisitor
 
         List<Type> types = new ArrayList<Type>();
 
-        if ((mn.access & Opcodes.ACC_STATIC) != 0)
+        if ((mn.access & Opcodes.ACC_STATIC) == 0)
         {
             types.add(Type.getType("L" + clsName + ";"));
             params.add(0, "this");

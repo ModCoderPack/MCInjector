@@ -56,7 +56,7 @@ public class GenerateMapClassAdapter extends ClassVisitor
         List<Type> types = new ArrayList<Type>();
         int idx = 0;
         
-        if ((access & Opcodes.ACC_STATIC) != 0)
+        if ((access & Opcodes.ACC_STATIC) == 0)
         {
             idx = 1;
             names.add("this");
