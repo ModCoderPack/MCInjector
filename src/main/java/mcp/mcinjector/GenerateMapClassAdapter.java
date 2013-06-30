@@ -85,6 +85,10 @@ public class GenerateMapClassAdapter extends ClassVisitor
         {
             mci.setParams(clsSig, StringUtil.joinString(names.subList(idx, names.size()), ","));
         }
+        else
+        {
+            mci.setParams(clsSig, "");
+        }
         
         return super.visitMethod(access, name, desc, signature, exceptions);
     }
