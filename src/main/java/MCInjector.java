@@ -1,79 +1,108 @@
+import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import joptsimple.OptionException;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 import mcp.mcinjector.LogFormatter;
 import mcp.mcinjector.MCInjectorImpl;
 
 public class MCInjector
 {
     private final static Logger log = Logger.getLogger("MCInjector");
-	public static final String VERSION = "MCInjector v3.0 by Searge, LexManos, Fesh0r";
+	public static final String VERSION = "MCInjector v3.1 by Searge, LexManos, Fesh0r";
 	
     public static void main(String[] args) throws Exception
     {
-        if (args.length < 3)
-        {
-            if (args.length > 0)
-            {
-                if (args[0].equalsIgnoreCase("-help") || args[0].equalsIgnoreCase("--help"))
-                {
-                    MCInjector.showUsage();
-                    System.exit(0);
-                }
+    	
+    	OptionParser parser = new OptionParser();
+    	parser.accepts("help").forHelp();
+    	parser.accepts("version").forHelp();
+    	parser.accepts("jarIn").withRequiredArg().required();
+    	parser.accepts("jarOut").withRequiredArg().required();
+    	parser.accepts("mapIn").withRequiredArg().required();
+    	parser.accepts("mapOut").withRequiredArg();
+    	parser.accepts("log").withRequiredArg();
+    	parser.accepts("index").withRequiredArg().ofType(Integer.class).defaultsTo(0);
+    	parser.accepts("jsonIn").withRequiredArg();
 
-                if (args[0].equalsIgnoreCase("-version") || args[0].equalsIgnoreCase("--version"))
-                {
-                    System.out.println(MCInjector.VERSION);
-                    System.exit(0);
-                }
-            }
+    	try
+    	{
+    		OptionSet options = parser.parse(args);
+    		if (options.has("help"))
+    		{
+    			System.out.println(VERSION);
+    			parser.printHelpOn(System.out);
+    			return;
+    		}
+    		else if (options.has("version"))
+    		{
+    			System.out.println(VERSION);
+    			return;
+    		}
 
-            MCInjector.showUsage();
-            System.exit(1);
-        }
-
-        String inFile = args[0];
-        String outFile = args[1];
-        String inMapFile = args[2];
-        String logFile = (args.length > 3 ? args[3] : null);
-        String outMapFile = (args.length > 4 ? args[4] : null);
-        int index = (args.length > 5 ? Integer.parseInt(args[5]) : 0);
-
-        MCInjector.log.setUseParentHandlers(false);
-        MCInjector.log.setLevel(Level.ALL);
-
-        if (logFile != null)
-        {
-            FileHandler filehandler = new FileHandler(logFile);
-            filehandler.setFormatter(new LogFormatter());
-            MCInjector.log.addHandler(filehandler);
-        }
-
-        System.out.println(MCInjector.VERSION);
-        MCInjector.log.info(MCInjector.VERSION);
-        MCInjector.log.info("Input: "          + inFile);
-        MCInjector.log.info("Output: "         + outFile);
-        MCInjector.log.info("Log: "            + logFile);
-        MCInjector.log.info("MappingsInput: "  + inMapFile);
-        MCInjector.log.info("MappingsOutput: " + outMapFile);
-        MCInjector.log.info("Mappings: "       + index);
-
-        try
-        {
-            MCInjectorImpl.process(inFile, outFile, inMapFile, logFile, outMapFile, index);
-        }
-        catch (Exception e)
-        {
-            System.err.println("ERROR: " + e.getMessage());
-            e.printStackTrace();
-            System.exit(1);
-        }
+	        String jarIn   = (String)options.valueOf("jarIn");
+	        String jarOut  = (String)options.valueOf("jarOut");
+	        String mapIn   = (String)options.valueOf("mapIn");
+	        String mapOut  = (String)options.valueOf("mapOut");
+	        String log     = (String)options.valueOf("log");
+	        String jsonIn  = (String)options.valueOf("jsonIn");
+	        int index      = (Integer)options.valueOf("index");
+	
+	        MCInjector.log.setUseParentHandlers(false);
+	        MCInjector.log.setLevel(Level.ALL);
+	
+	        if (log != null)
+	        {
+	            FileHandler filehandler = new FileHandler(log);
+	            filehandler.setFormatter(new LogFormatter());
+	            MCInjector.log.addHandler(filehandler);
+	            MCInjector.log.addHandler(new Handler()
+	            {
+					@Override
+					public void publish(LogRecord record)
+					{
+						System.out.println(String.format(record.getMessage(), record.getParameters()));
+						
+					}
+					@Override public void flush() {}
+					@Override public void close() throws SecurityException {}
+	            });
+	        }
+	
+	        log(MCInjector.VERSION);
+	        log("Input:          " + jarIn);
+	        log("Output:         " + jarOut);
+	        log("Log:            " + log);
+	        log("MappingsInput:  " + mapIn);
+	        log("MappingsOutput: " + mapOut);
+	        log("Mappings:       " + index);
+	        log("Json:           " + jsonIn);
+	
+	        try
+	        {
+	            MCInjectorImpl.process(jarIn, jarOut, mapIn, log, mapOut, index, jsonIn);
+	        }
+	        catch (Exception e)
+	        {
+	            System.err.println("ERROR: " + e.getMessage());
+	            e.printStackTrace();
+	            System.exit(1);
+	        }
+    	}
+    	catch (OptionException e)
+    	{
+    		parser.printHelpOn(System.out);
+    		e.printStackTrace();
+    	}
     }
 
-    private static void showUsage()
+    private static void log(String line)
     {
-        System.err.println(MCInjector.VERSION);
-        System.err.println("MCInjector IN OUT MAPFILE [LOGFILE] [OUTMAP] [INDEX]");
+    	log.info(line);
     }
 }

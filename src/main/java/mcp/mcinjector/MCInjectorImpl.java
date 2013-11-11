@@ -14,7 +14,9 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.logging.Level;
@@ -30,9 +32,12 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
+import com.google.gson.Gson;
+
 public class MCInjectorImpl
 {
     private final static Logger log = Logger.getLogger("MCInjector");
+    public final Map<String, Object> json = new HashMap<String, Object>();
     public final Properties mappings = new Properties();
     public final Properties outMappings = new Properties()
     {
@@ -55,10 +60,11 @@ public class MCInjectorImpl
     public int initIndex = 0;
     public boolean generate = false; 
 
-    public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index)
+    public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index, String classJson)
         throws IOException
     {
         MCInjectorImpl mci = new MCInjectorImpl(index, outMapFile != null);
+        mci.loadJson(classJson);
         mci.loadMap(mapFile);
         mci.processJar(inFile, outFile);
         if (outMapFile != null)
@@ -106,6 +112,38 @@ public class MCInjectorImpl
                 }
             }
         }
+    }
+
+	@SuppressWarnings("unchecked")
+    public void loadJson(String classJson) throws IOException
+    {
+		if (classJson == null) return;
+
+    	Reader reader = null;
+    	try
+    	{
+    		reader = new FileReader(classJson);
+			json.clear();
+			json.putAll(new Gson().fromJson(reader, Map.class));
+    	}
+        catch (IOException e)
+        {
+            throw new IOException("Could not open json file: " + e.getMessage());
+        }
+    	finally
+    	{
+    		if (reader != null)
+    		{
+    			try
+    			{
+    				reader.close();
+    			}
+    			catch (IOException e)
+    			{
+    				// nom nom nom
+    			}
+    		}
+    	}
     }
 
     public void saveMap(String mapFile) throws IOException
@@ -292,7 +330,9 @@ public class MCInjectorImpl
         ClassReader cr = new ClassReader(cls);
         ClassNode cn = new ClassNode();
         
-        ClassVisitor ca = new ApplyMapClassAdapter(cn, this);
+        ClassVisitor ca = cn;
+        ca = new ApplyMapClassAdapter(cn, this);
+        ca = new JsonAttributeClassAdaptor(ca, this);
         
         if (generate)
         {
