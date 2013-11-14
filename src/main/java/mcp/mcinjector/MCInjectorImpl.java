@@ -17,6 +17,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.logging.Level;
@@ -32,12 +33,12 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
-import com.google.gson.Gson;
+import com.google.gson.*;
 
 public class MCInjectorImpl
 {
     private final static Logger log = Logger.getLogger("MCInjector");
-    public final Map<String, Object> json = new HashMap<String, Object>();
+    public final Map<String, JsonStruct> json = new HashMap<String, JsonStruct>();
     public final Properties mappings = new Properties();
     public final Properties outMappings = new Properties()
     {
@@ -114,7 +115,8 @@ public class MCInjectorImpl
         }
     }
 
-	@SuppressWarnings("unchecked")
+    private static final Gson GSON = new Gson();
+
     public void loadJson(String classJson) throws IOException
     {
 		if (classJson == null) return;
@@ -124,7 +126,12 @@ public class MCInjectorImpl
     	{
     		reader = new FileReader(classJson);
 			json.clear();
-			json.putAll(new Gson().fromJson(reader, Map.class));
+    		
+    	    JsonObject object = (JsonObject)new JsonParser().parse(reader);
+    	    for (Entry<String, JsonElement> entry : object.entrySet())
+    	    {
+    	    	json.put(entry.getKey(), GSON.fromJson(entry.getValue(), JsonStruct.class));
+    	    }
     	}
         catch (IOException e)
         {

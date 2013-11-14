@@ -1,8 +1,6 @@
 package mcp.mcinjector;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -14,7 +12,7 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
     private static final Logger log = Logger.getLogger("MCInjector");
     private MCInjectorImpl mci;
     private String className;
-    private Map<String, Object> json;
+    private JsonStruct json;
     private boolean visitedOuter = false;
     private Set<String> visitedInners = new HashSet<String>();
 
@@ -24,12 +22,11 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
         this.mci = mci;
     }
 
-    @SuppressWarnings("unchecked")
 	@Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
     {
         this.className = name;
-        json = (Map<String, Object>)mci.json.get(className);
+        json = mci.json.get(className);
         visitedOuter = false;
         visitedInners.clear();
         super.visit(version, access, name, signature, superName, interfaces);
@@ -42,7 +39,13 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
     	super.visitInnerClass(name, outerName, innerName, access);
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
+    public void visitOuterClass(String owner, String name, String desc)
+    {
+        visitedOuter = true;
+        super.visitOuterClass(owner, name, desc);
+    }
+
 	@Override
     public void visitEnd()
     {
@@ -52,29 +55,21 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
     		return;
     	}
 
-    	ArrayList<String> tmp = (ArrayList<String>)json.get("OuterClass");
-    	if (tmp != null && !visitedOuter)
+    	JsonStruct.EnclosingMethod enc = json.enclosingMethod;
+    	if (enc != null && !visitedOuter)
     	{
-    		String owner = tmp.get(0);
-    		String name = (tmp.size() > 1 ? tmp.get(1) : null);
-    		String desc = (tmp.size() > 2 ? tmp.get(2) : null);
-    		log.fine("Adding Outer Class: " + owner + " " + name + " " + desc);
-    		super.visitOuterClass(owner, name, desc);
+    		log.fine("Adding Outer Class: " + enc.owner + " " + enc.name + " " + enc.desc);
+    		super.visitOuterClass(enc.owner, enc.name, enc.desc);
     	}
 
-    	ArrayList<ArrayList<String>> inners = (ArrayList<ArrayList<String>>)json.get("InnerClasses");
-    	if (inners != null)
+    	if (json.innerClasses != null)
 		{
-    		for (ArrayList<String> a : inners)
+    		for (JsonStruct.InnerClass inner : json.innerClasses)
     		{
-        		String name = a.get(0);
-        		int access  = Integer.parseInt(a.get(1), 16);
-        		String outerName = (a.size() > 2 ? a.get(2) : null);
-        		String innerName = (a.size() > 3 ? a.get(3) : null);
-        		if (!visitedInners.contains(name))
+        		if (!visitedInners.contains(inner.inner_class))
         		{
-        			log.fine("Adding Inner Class: " + name + " " + Integer.toHexString(access) + " " + outerName + " " + innerName);
-        			super.visitInnerClass(name, outerName, innerName, access);
+        			log.fine("Adding Inner Class: " + inner.inner_class + " " + inner.getAccess() + " " + inner.outer_class + " " + inner.inner_name);
+        			super.visitInnerClass(inner.inner_class, inner.outer_class, inner.inner_name, inner.getAccess());
     			}
     		}
 		}

@@ -1,0 +1,29 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'eu.appsatori:gradle-fatjar-plugin:0.2-rc1'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'fatjar'
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    manifest.attributes('Main-Class': 'MCInjector')
+}
+fatJar {
+    manifest.attributes('Main-Class': 'MCInjector')
+}
+
+dependencies {
+    compile 'org.ow2.asm:asm-debug-all:4.1'
+    compile 'net.sf.jopt-simple:jopt-simple:4.5'
+    compile 'com.google.code.gson:gson:2.2.4'
+}
