@@ -22,12 +22,13 @@ public class MCInjector
     	parser.accepts("help").forHelp();
     	parser.accepts("version").forHelp();
     	parser.accepts("jarIn").withRequiredArg().required();
-    	parser.accepts("jarOut").withRequiredArg().required();
+    	parser.accepts("jarOut").withRequiredArg();
     	parser.accepts("mapIn").withRequiredArg().required();
     	parser.accepts("mapOut").withRequiredArg();
     	parser.accepts("log").withRequiredArg();
     	parser.accepts("index").withRequiredArg().ofType(Integer.class).defaultsTo(0);
     	parser.accepts("jsonIn").withRequiredArg();
+    	parser.accepts("applyMarkers");
 
     	try
     	{
@@ -51,6 +52,7 @@ public class MCInjector
 	        String log     = (String)options.valueOf("log");
 	        String jsonIn  = (String)options.valueOf("jsonIn");
 	        int index      = (Integer)options.valueOf("index");
+	        boolean applyM = options.has("applyMarkers");
 	
 	        MCInjector.log.setUseParentHandlers(false);
 	        MCInjector.log.setLevel(Level.ALL);
@@ -81,10 +83,11 @@ public class MCInjector
 	        log("MappingsOutput: " + mapOut);
 	        log("Mappings:       " + index);
 	        log("Json:           " + jsonIn);
+	        log("ApplyMarker:    " + applyM);
 	
 	        try
 	        {
-	            MCInjectorImpl.process(jarIn, jarOut, mapIn, log, mapOut, index, jsonIn);
+	            MCInjectorImpl.process(jarIn, jarOut, mapIn, log, mapOut, index, jsonIn, applyM);
 	        }
 	        catch (Exception e)
 	        {

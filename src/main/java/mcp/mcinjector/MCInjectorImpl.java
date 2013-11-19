@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -59,15 +60,19 @@ public class MCInjectorImpl
         }
     };
     public int initIndex = 0;
-    public boolean generate = false; 
+    public boolean generate = false;
+    private boolean applyMarkers = false;
 
-    public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index, String classJson)
+    public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index, String classJson, boolean applyMarkers)
         throws IOException
     {
         MCInjectorImpl mci = new MCInjectorImpl(index, outMapFile != null);
         mci.loadJson(classJson);
         mci.loadMap(mapFile);
+        mci.applyMarkers = applyMarkers;
+
         mci.processJar(inFile, outFile);
+
         if (outMapFile != null)
         {
             mci.saveMap(outMapFile);
@@ -189,6 +194,17 @@ public class MCInjectorImpl
         }
     }
 
+    public String getMarker(String cls)
+    {
+    	String marker = this.mappings.getProperty(cls);
+    	if (marker == null)
+    	{
+    		marker = String.format("CL_%08d", this.initIndex++);
+    	}
+    	outMappings.put(cls, marker);
+    	return marker;
+    }
+
 	public List<String> getExceptions(String signature)
 	{
 	    String curMap = this.mappings.getProperty(signature);
@@ -247,7 +263,8 @@ public class MCInjectorImpl
 
             try
             {
-                outJar = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outFile)));
+            	OutputStream out = (outFile == null ? new ByteArrayOutputStream() : new FileOutputStream(outFile));
+            	outJar = new ZipOutputStream(new BufferedOutputStream(out));
             }
             catch (FileNotFoundException e)
             {
@@ -290,7 +307,7 @@ public class MCInjectorImpl
                 {
                     MCInjectorImpl.log.log(Level.INFO, "Processing " + entryName);
 
-                    entryData = this.processClass(entryData);
+                    entryData = this.processClass(entryData, outFile == null);
 
                     MCInjectorImpl.log.log(Level.INFO, "Processed " + entryBuffer.size() + " -> " + entryData.length);
                 }
@@ -332,18 +349,30 @@ public class MCInjectorImpl
         }
     }
 
-    public byte[] processClass(byte[] cls)
+    public byte[] processClass(byte[] cls, boolean readOnly)
     {
         ClassReader cr = new ClassReader(cls);
         ClassNode cn = new ClassNode();
         
         ClassVisitor ca = cn;
-        ca = new ApplyMapClassAdapter(cn, this);
-        ca = new JsonAttributeClassAdaptor(ca, this);
-        
-        if (generate)
+        if (readOnly)
         {
-        	ca = new GenerateMapClassAdapter(ca, this);
+        	ca = new ReadMarkerClassAdaptor(ca, this);
+        }
+        else
+        {
+	        ca = new ApplyMapClassAdapter(cn, this);   	
+	        ca = new JsonAttributeClassAdaptor(ca, this);
+	
+	        if (applyMarkers)
+	        {
+	        	ca = new ApplyMarkerClassAdaptor(ca, this);
+	        }
+	
+	        if (generate)
+	        {
+	        	ca = new GenerateMapClassAdapter(ca, this);
+	        }
         }
         
         cr.accept(ca, 0);
