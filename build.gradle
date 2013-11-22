@@ -11,15 +11,20 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'fatjar'
 
+group = 'de.oceanlabs.mcp'
+version = '3.1-SNAPSHOT'
+targetCompatibility = '1.6'
+sourceCompatibility = '1.6'
+
 repositories {
     mavenCentral()
 }
 
 jar {
-    manifest.attributes('Main-Class': 'MCInjector')
+    manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
 }
 fatJar {
-    manifest.attributes('Main-Class': 'MCInjector')
+    manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
 }
 
 dependencies {
