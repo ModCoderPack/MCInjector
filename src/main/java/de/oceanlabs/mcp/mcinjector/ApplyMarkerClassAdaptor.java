@@ -1,4 +1,4 @@
-package mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector;
 
 import java.util.logging.Logger;
 

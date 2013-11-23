@@ -1,4 +1,4 @@
-package mcp;
+package de.oceanlabs.mcp.mcinjector;
 
 import java.util.ArrayList;
 import java.util.Arrays;

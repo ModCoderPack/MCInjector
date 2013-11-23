@@ -1,4 +1,4 @@
-package mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -26,8 +26,6 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import mcp.StringUtil;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;

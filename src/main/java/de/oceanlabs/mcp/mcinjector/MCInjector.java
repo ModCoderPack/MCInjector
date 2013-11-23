@@ -1,3 +1,4 @@
+package de.oceanlabs.mcp.mcinjector;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -7,8 +8,6 @@ import java.util.logging.Logger;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import mcp.mcinjector.LogFormatter;
-import mcp.mcinjector.MCInjectorImpl;
 
 public class MCInjector
 {

@@ -1,4 +1,4 @@
-package mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

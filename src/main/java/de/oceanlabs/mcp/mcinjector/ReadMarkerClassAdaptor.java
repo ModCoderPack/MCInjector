@@ -1,4 +1,4 @@
-package mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector;
 
 import java.util.logging.Logger;
 
@@ -26,7 +26,10 @@ public class ReadMarkerClassAdaptor extends ClassVisitor
 	@Override
 	public FieldVisitor visitField(int access, String name, String desc, String signature, Object value)
 	{
-		log.info("  Marker ID: " + (String)value + " " + className);
+	    if (name.equals("__OBFID"))
+	    {
+	        log.info("  Marker ID: " + (String)value + " " + className);
+	    }
 		return super.visitField(access, name, desc, signature, value);
 	}
 }

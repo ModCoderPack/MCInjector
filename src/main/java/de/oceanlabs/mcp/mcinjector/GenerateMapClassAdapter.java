@@ -1,12 +1,10 @@
-package mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import mcp.StringUtil;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;

@@ -10,6 +10,7 @@ buildscript {
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'fatjar'
+apply plugin: 'maven'
 
 group = 'de.oceanlabs.mcp'
 version = '3.1-SNAPSHOT'
@@ -24,11 +25,90 @@ jar {
     manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
 }
 fatJar {
+    classifier 'fatjar'
     manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
+}
+
+artifacts {
+    archives jar
+    archives fatJar
 }
 
 dependencies {
     compile 'org.ow2.asm:asm-debug-all:4.1'
     compile 'net.sf.jopt-simple:jopt-simple:4.5'
     compile 'com.google.code.gson:gson:2.2.4'
+}
+configurations { deployJars }
+uploadArchives {
+    repositories {
+        add project.repositories.mavenLocal()
+    }
+    repositories.mavenDeployer {
+        configuration = configurations.deployJars
+
+        if (project.hasProperty("filesmaven")) {
+            logger.info('Publishing to files server')
+            repository(url: project.filesmaven.url) {
+                authentication(userName: project.filesmaven.username, privateKey: project.filesmaven.key)
+            }
+        } else {
+            logger.info('Publishing to repo folder')
+            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
+        }
+
+        pom {
+            groupId = project.group
+            version = project.version
+            artifactId = project.archivesBaseName
+        }
+        pom.project {
+            name project.archivesBaseName
+            packaging 'jar'
+            description 'Java class metadata injector'
+            url 'https://github.com/ModCoderPack/MCInjector'
+
+            scm {
+                url 'https://github.com/ModCoderPack/MCInjector'
+                connection 'scm:git:git://github.com/ModCoderPack/MCInjector.git'
+                developerConnection 'scm:git:git@github.com:ModCoderPack/MCInjector.git'
+            }
+
+            issueManagement {
+                system 'github'
+                url 'https://github.com/ModCoderPack/MCInjector/issues'
+            }
+
+            licenses {
+                license {
+                    name ''
+                    url ''
+                    distribution 'repo'
+                }
+            }
+
+            developers {
+                developer {
+                    id 'Fesh0r'
+                    name 'Fesh0r'
+                    roles { role 'developer' }
+                }
+                developer {
+                    id 'Searge'
+                    name 'Searge'
+                    roles { role 'developer' }
+                }
+                developer {
+                    id 'cpw'
+                    name 'cpw'
+                    roles { role 'developer' }
+                }
+                developer {
+                    id 'LexManos'
+                    name 'Lex Manos'
+                    roles { role 'developer' }
+                }
+            }
+        }
+    }
 }
