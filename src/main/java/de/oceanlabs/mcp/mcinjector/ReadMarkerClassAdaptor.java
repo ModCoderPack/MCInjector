@@ -28,7 +28,7 @@ public class ReadMarkerClassAdaptor extends ClassVisitor
     {
         if (name.equals("__OBFID"))
         {
-            log.info("  Marker ID: " + (String)value + " " + className);
+            log.info("  Marker ID: " + String.valueOf(value) + " " + className);
         }
         return super.visitField(access, name, desc, signature, value);
     }
