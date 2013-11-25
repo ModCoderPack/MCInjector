@@ -13,7 +13,7 @@ apply plugin: 'fatjar'
 apply plugin: 'maven'
 
 group = 'de.oceanlabs.mcp'
-version = '3.1'
+version = '3.2-SNAPSHOT'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
