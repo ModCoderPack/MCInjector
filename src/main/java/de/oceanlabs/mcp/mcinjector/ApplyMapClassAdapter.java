@@ -72,17 +72,17 @@ public class ApplyMapClassAdapter extends ClassVisitor
         {
             for (String s : exceptions)
             {
-            	if (!map.contains(s))
-            	{
-            		map.add(s);
-            	}
+                if (!map.contains(s))
+                {
+                    map.add(s);
+                }
             }
         }
 
         if (map.size() > 0)
         {
-        	String excs = StringUtil.joinString(map, ",");
-        	exceptions = map.toArray(new String[map.size()]);
+            String excs = StringUtil.joinString(map, ",");
+            exceptions = map.toArray(new String[map.size()]);
             log.log(Level.FINE, "    Adding Exceptions: " + excs);
             mci.setExceptions(clsSig, excs);
         }
@@ -92,12 +92,12 @@ public class ApplyMapClassAdapter extends ClassVisitor
 
     private MethodNode processLVT(String clsName, String classSig, MethodNode mn)
     {
-    	List<String> params = mci.getParams(classSig);
-    	//No params to add skip it.
-    	if (params.size() == 0)
-    	{
-    		return mn;
-    	}
+        List<String> params = mci.getParams(classSig);
+        //No params to add skip it.
+        if (params.size() == 0)
+        {
+            return mn;
+        }
 
         List<Type> types = new ArrayList<Type>();
 
@@ -126,15 +126,15 @@ public class ApplyMapClassAdapter extends ClassVisitor
         // Add labels to the start and end if they are not already labels
         AbstractInsnNode tmp = mn.instructions.getFirst();
         if (tmp == null)
-        	mn.instructions.add(new LabelNode());
+            mn.instructions.add(new LabelNode());
         else if (tmp.getType() != AbstractInsnNode.LABEL)
-        	mn.instructions.insertBefore(tmp, new LabelNode());
+            mn.instructions.insertBefore(tmp, new LabelNode());
         
         tmp = mn.instructions.getLast();
         if (tmp == null)
-        	mn.instructions.add(new LabelNode());
+            mn.instructions.add(new LabelNode());
         else if (tmp.getType() != AbstractInsnNode.LABEL)
-        	mn.instructions.insert(tmp, new LabelNode());
+            mn.instructions.insert(tmp, new LabelNode());
         
         //Grab the start and end labels
         LabelNode start = (LabelNode)mn.instructions.getFirst();
@@ -159,6 +159,6 @@ public class ApplyMapClassAdapter extends ClassVisitor
 
             if (desc.equals("J") || desc.equals("D")) y++;
         }
-    	return mn;
+        return mn;
     }
 }

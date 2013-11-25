@@ -15,32 +15,32 @@ public class ApplyMarkerClassAdaptor extends ClassVisitor
     private String className;
     private int FLAGS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL;
 
-	public ApplyMarkerClassAdaptor(ClassVisitor cv, MCInjectorImpl mci)
+    public ApplyMarkerClassAdaptor(ClassVisitor cv, MCInjectorImpl mci)
     {
         super(Opcodes.ASM4, cv);
         this.mci = mci;
     }
 
-	@Override
+    @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
     {
         this.className = name;;
         if ((access & ACC_INTERFACE) == ACC_INTERFACE)
         {
-        	FLAGS = -1; // ACC_STATIC | ACC_FINAL;
+            FLAGS = -1; // ACC_STATIC | ACC_FINAL;
         }
         super.visit(version, access, name, signature, superName, interfaces);
     }
 
-	@Override
+    @Override
     public void visitEnd()
     {
-		if (FLAGS != -1)
-		{
-			String marker = mci.getMarker(className);
-			log.info("  Marker ID: " + marker + " " + className);
-			this.visitField(FLAGS, "__OBFID", Type.getDescriptor(String.class), null, marker);
-		}
-		super.visitEnd();
+        if (FLAGS != -1)
+        {
+            String marker = mci.getMarker(className);
+            log.info("  Marker ID: " + marker + " " + className);
+            this.visitField(FLAGS, "__OBFID", Type.getDescriptor(String.class), null, marker);
+        }
+        super.visitEnd();
     }
 }

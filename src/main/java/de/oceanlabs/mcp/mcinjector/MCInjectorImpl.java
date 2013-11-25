@@ -94,8 +94,8 @@ public class MCInjectorImpl
             this.mappings.load(mapReader);
             if (initIndex == 0)
             {
-            	initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "1000"));
-            	log.info("Loaded Max Constructor Index: " + initIndex);
+                initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "1000"));
+                log.info("Loaded Max Constructor Index: " + initIndex);
             }
         }
         catch (IOException e)
@@ -122,38 +122,38 @@ public class MCInjectorImpl
 
     public void loadJson(String classJson) throws IOException
     {
-		if (classJson == null) return;
+        if (classJson == null) return;
 
-    	Reader reader = null;
-    	try
-    	{
-    		reader = new FileReader(classJson);
-			json.clear();
-    		
-    	    JsonObject object = (JsonObject)new JsonParser().parse(reader);
-    	    for (Entry<String, JsonElement> entry : object.entrySet())
-    	    {
-    	    	json.put(entry.getKey(), GSON.fromJson(entry.getValue(), JsonStruct.class));
-    	    }
-    	}
+        Reader reader = null;
+        try
+        {
+            reader = new FileReader(classJson);
+            json.clear();
+            
+            JsonObject object = (JsonObject)new JsonParser().parse(reader);
+            for (Entry<String, JsonElement> entry : object.entrySet())
+            {
+                json.put(entry.getKey(), GSON.fromJson(entry.getValue(), JsonStruct.class));
+            }
+        }
         catch (IOException e)
         {
             throw new IOException("Could not open json file: " + e.getMessage());
         }
-    	finally
-    	{
-    		if (reader != null)
-    		{
-    			try
-    			{
-    				reader.close();
-    			}
-    			catch (IOException e)
-    			{
-    				// nom nom nom
-    			}
-    		}
-    	}
+        finally
+        {
+            if (reader != null)
+            {
+                try
+                {
+                    reader.close();
+                }
+                catch (IOException e)
+                {
+                    // nom nom nom
+                }
+            }
+        }
     }
 
     public void saveMap(String mapFile) throws IOException
@@ -164,7 +164,7 @@ public class MCInjectorImpl
             mapWriter = new FileWriter(mapFile);
             if (this.initIndex > 0)
             {
-            	this.outMappings.put("max_constructor_index", Integer.toString(initIndex));
+                this.outMappings.put("max_constructor_index", Integer.toString(initIndex));
                 this.outMappings.store(mapWriter, "max index=" + this.initIndex);
             }
             else
@@ -194,54 +194,54 @@ public class MCInjectorImpl
 
     public String getMarker(String cls)
     {
-    	String marker = this.mappings.getProperty(cls);
-    	if (marker == null)
-    	{
-    		marker = String.format("CL_%08d", this.initIndex++);
-    	}
-    	outMappings.put(cls, marker);
-    	return marker;
+        String marker = this.mappings.getProperty(cls);
+        if (marker == null)
+        {
+            marker = String.format("CL_%08d", this.initIndex++);
+        }
+        outMappings.put(cls, marker);
+        return marker;
     }
 
-	public List<String> getExceptions(String signature)
-	{
-	    String curMap = this.mappings.getProperty(signature);
-	    if (curMap == null) return new ArrayList<String>();
+    public List<String> getExceptions(String signature)
+    {
+        String curMap = this.mappings.getProperty(signature);
+        if (curMap == null) return new ArrayList<String>();
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
         if (splitMap.get(0).equals("")) return new ArrayList<String>();
         return  StringUtil.splitString(splitMap.get(0), ",");
-	}
-	
-	public List<String> getParams(String signature)
-	{
-	    String curMap = mappings.getProperty(signature);
-	    if (curMap == null) return new ArrayList<String>();
+    }
+    
+    public List<String> getParams(String signature)
+    {
+        String curMap = mappings.getProperty(signature);
+        if (curMap == null) return new ArrayList<String>();
         List<String> split = StringUtil.splitString(curMap, "|", -1);
         if (split.size() <= 1 || split.get(1).equals("")) return new ArrayList<String>();
         return StringUtil.splitString(split.get(1), ",");
-	}
+    }
 
-	public void setExceptions(String signature, String excs)
-	{
-		String curMap = outMappings.getProperty(signature);   
-	    if (curMap == null) curMap = excs + "|"; 
+    public void setExceptions(String signature, String excs)
+    {
+        String curMap = outMappings.getProperty(signature);   
+        if (curMap == null) curMap = excs + "|"; 
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
-    	outMappings.put(signature, excs + "|" + splitMap.get(1));
-	}
+        outMappings.put(signature, excs + "|" + splitMap.get(1));
+    }
 
-	public void setParams(String signature, String params)
-	{
-		String curMap = outMappings.getProperty(signature);   
-	    if (curMap == null) curMap = "|" + params;
+    public void setParams(String signature, String params)
+    {
+        String curMap = outMappings.getProperty(signature);   
+        if (curMap == null) curMap = "|" + params;
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
-    	outMappings.put(signature, splitMap.get(0) + "|" + params);
+        outMappings.put(signature, splitMap.get(0) + "|" + params);
 
-    	// Add to the input mappings so the generator will power the applier.
-		curMap = mappings.getProperty(signature);   
-	    if (curMap == null) curMap = "|" + params;
+        // Add to the input mappings so the generator will power the applier.
+        curMap = mappings.getProperty(signature);   
+        if (curMap == null) curMap = "|" + params;
         splitMap = StringUtil.splitString(curMap, "|", -1);
         mappings.put(signature, splitMap.get(0) + "|" + params);
-	}
+    }
 
     public void processJar(String inFile, String outFile) throws IOException
     {
@@ -261,8 +261,8 @@ public class MCInjectorImpl
 
             try
             {
-            	OutputStream out = (outFile == null ? new ByteArrayOutputStream() : new FileOutputStream(outFile));
-            	outJar = new ZipOutputStream(new BufferedOutputStream(out));
+                OutputStream out = (outFile == null ? new ByteArrayOutputStream() : new FileOutputStream(outFile));
+                outJar = new ZipOutputStream(new BufferedOutputStream(out));
             }
             catch (FileNotFoundException e)
             {
@@ -355,22 +355,22 @@ public class MCInjectorImpl
         ClassVisitor ca = cn;
         if (readOnly)
         {
-        	ca = new ReadMarkerClassAdaptor(ca, this);
+            ca = new ReadMarkerClassAdaptor(ca, this);
         }
         else
         {
-	        ca = new ApplyMapClassAdapter(cn, this);   	
-	        ca = new JsonAttributeClassAdaptor(ca, this);
-	
-	        if (applyMarkers)
-	        {
-	        	ca = new ApplyMarkerClassAdaptor(ca, this);
-	        }
-	
-	        if (generate)
-	        {
-	        	ca = new GenerateMapClassAdapter(ca, this);
-	        }
+            ca = new ApplyMapClassAdapter(cn, this);       
+            ca = new JsonAttributeClassAdaptor(ca, this);
+    
+            if (applyMarkers)
+            {
+                ca = new ApplyMarkerClassAdaptor(ca, this);
+            }
+    
+            if (generate)
+            {
+                ca = new GenerateMapClassAdapter(ca, this);
+            }
         }
         
         cr.accept(ca, 0);

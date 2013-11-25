@@ -69,17 +69,17 @@ public class GenerateMapClassAdapter extends ClassVisitor
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
 
-    	log.fine("    Generating map:");
+        log.fine("    Generating map:");
         if (mci.initIndex < 0)
         {
-        	generateGenerics(idx, names, types);
+            generateGenerics(idx, names, types);
         }
         else
         {
-        	generateUnique(idx, clsSig, name, names, types);
+            generateUnique(idx, clsSig, name, names, types);
         }
 
-        if (names.size() > idx)	
+        if (names.size() > idx)    
         {
             mci.setParams(clsSig, StringUtil.joinString(names.subList(idx, names.size()), ","));
         }
@@ -105,7 +105,7 @@ public class GenerateMapClassAdapter extends ClassVisitor
 
     private void generateUnique(int idx, String clsSig, String methodName, List<String> names, List<Type> types)
     {
-    	// A srg name method params are just p_MethodID_ParamIndex_
+        // A srg name method params are just p_MethodID_ParamIndex_
         if (methodName.matches("func_\\d+_.+"))
         {
             String funcId = methodName.substring(5, methodName.indexOf('_', 5));
@@ -123,24 +123,24 @@ public class GenerateMapClassAdapter extends ClassVisitor
         {
             if (types.size() > idx)
             {
-            	int conID = -1;
-            	List<String> old = mci.getParams(clsSig);
-            	String tmp = (old.size() > 0 ? old.get(0) : "");
-            	if (tmp.matches("p_i\\d+_\\d+_"))
-            	{
-            		conID = Integer.parseInt(tmp.substring(3, tmp.indexOf('_', 3)));
+                int conID = -1;
+                List<String> old = mci.getParams(clsSig);
+                String tmp = (old.size() > 0 ? old.get(0) : "");
+                if (tmp.matches("p_i\\d+_\\d+_"))
+                {
+                    conID = Integer.parseInt(tmp.substring(3, tmp.indexOf('_', 3)));
                     log.fine("      Constructor ID loaded " + conID);
-            	}
-            	else
-            	{
-            		conID = mci.initIndex++;
+                }
+                else
+                {
+                    conID = mci.initIndex++;
                     log.fine("      Constructor ID assigned " + conID);
-            	}
+                }
 
                 for (int x = idx, y = x; x < types.size(); x++, y++)
                 {
                     String desc = types.get(x).getDescriptor();
-                	String name = String.format("p_i%d_%d_", conID, y);
+                    String name = String.format("p_i%d_%d_", conID, y);
                     names.add(name);
                     log.fine("      Naming argument " + x + " (" + y + ") -> " + name + " " + desc);
                     if (desc.equals("J") || desc.equals("D")) y++;
