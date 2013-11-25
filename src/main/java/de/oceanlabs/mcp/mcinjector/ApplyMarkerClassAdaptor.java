@@ -38,7 +38,7 @@ public class ApplyMarkerClassAdaptor extends ClassVisitor
         if (FLAGS != -1)
         {
             String marker = mci.getMarker(className);
-            log.info("  Marker ID: " + marker + " " + className);
+            log.info(" MarkerID: " + marker + " " + className);
             this.visitField(FLAGS, "__OBFID", Type.getDescriptor(String.class), null, marker);
         }
         super.visitEnd();
