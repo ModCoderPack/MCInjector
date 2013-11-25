@@ -197,6 +197,7 @@ public class MCInjectorImpl
         String marker = this.mappings.getProperty(cls);
         if (marker == null)
         {
+            if (!this.generate) return null;
             marker = String.format("CL_%08d", this.initIndex++);
         }
         outMappings.put(cls, marker);
