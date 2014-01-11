@@ -2,6 +2,7 @@
 /bin
 /.settings
 /.classpath
+/.project
 
 #idea
 /.idea
