@@ -56,7 +56,7 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
         }
 
         JsonStruct.EnclosingMethod enc = json.enclosingMethod;
-        if (enc != null && !visitedOuter)
+        if (enc != null && !visitedOuter && enc.name != null && enc.desc != null)
         {
             log.fine("Adding Outer Class: " + enc.owner + " " + enc.name + " " + enc.desc);
             super.visitOuterClass(enc.owner, enc.name, enc.desc);
