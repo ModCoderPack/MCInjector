@@ -47,6 +47,12 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
             case ACC_PUBLIC: ret |= ACC_PUBLIC; break;
         }
 
+        // Unset final bit if they are different (one final, one not-final)
+        if (((access1 & ACC_FINAL) ^ (access2 & ACC_FINAL)) == 1)
+        {
+            ret &= ~ACC_FINAL;
+        }
+
         return ret;
     }
 
