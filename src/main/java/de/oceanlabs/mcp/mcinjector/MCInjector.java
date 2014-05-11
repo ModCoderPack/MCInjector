@@ -91,6 +91,7 @@ public class MCInjector
             catch (Exception e)
             {
                 System.err.println("ERROR: " + e.getMessage());
+                MCInjector.log.log(Level.SEVERE, "ERROR", e);
                 e.printStackTrace();
                 System.exit(1);
             }
