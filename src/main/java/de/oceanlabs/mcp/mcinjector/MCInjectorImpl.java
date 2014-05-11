@@ -450,6 +450,7 @@ public class MCInjectorImpl
                 ca = new GenerateMapClassAdapter(ca, this);
             }
         }
+        ca = new AccessReaderClassAdaptor(ca, this);
         
         cr.accept(ca, 0);
 
