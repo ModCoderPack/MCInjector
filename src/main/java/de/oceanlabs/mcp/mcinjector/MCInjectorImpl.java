@@ -97,6 +97,10 @@ public class MCInjectorImpl
                 initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "1000"));
                 log.info("Loaded Max Constructor Index: " + initIndex);
             }
+            if (this.generate)
+            {
+                fixExceptions(this.mappings);
+            }
         }
         catch (IOException e)
         {
@@ -156,11 +160,84 @@ public class MCInjectorImpl
         }
     }
 
+    /*
+    public static void main(String[] args) throws Exception
+    {
+        MCInjectorImpl impl = new MCInjectorImpl(0, false);
+        impl.loadMap("Z:\\Clean\\1.7.9\\logs\\client_exc.log.exc");
+        impl.fixExceptions(impl.mappings);
+    }
+    */
+
+    private void fixExceptions(Properties props)
+    {
+        class Method
+        {
+            public String cls, desc;
+            Method(String cls, String desc){
+                this.cls = cls; this.desc = desc;
+            }
+        }
+        class Line
+        {
+            public String name;
+            public List<Method> classes = new ArrayList<Method>();
+            public List<String> exceptions = new ArrayList<String>();
+        }
+        Map<String, Line> entries = new HashMap<String, Line>();
+        for (Entry<Object, Object> e : props.entrySet())
+        {
+            String key = (String)e.getKey();
+            String value = (String)e.getValue();
+            if (value.indexOf('|') == -1) continue;
+            String cls = key.split("\\.")[0];
+            String name = key.split("\\.")[1];
+            String desc = name.substring(name.indexOf('('));
+            name = name.substring(0, name.indexOf('('));
+
+            if (!name.startsWith("func_")) continue;
+
+            Line line = entries.get(name);
+            if (line == null)
+            {
+                line = new Line();
+                line.name = name;
+                entries.put(name, line);
+            }
+            line.classes.add(new Method(cls, desc));
+            value = StringUtil.splitString(value, "|", -1).get(0);
+            for (String exc : StringUtil.splitString(value, ",", -1))
+            {
+                if (!"".equals(exc) && !line.exceptions.contains(exc))
+                    line.exceptions.add(exc);
+            }
+        }
+        for (Entry<String, Line> e : entries.entrySet())
+        {
+            Line line = e.getValue();
+            String excs = StringUtil.joinString(line.exceptions, ",", -1);
+            for (Method m : line.classes)
+            {
+                String key = m.cls + "." + line.name + m.desc;
+                List<String> old = StringUtil.splitString(props.getProperty(key), "|", -1);
+                if (!excs.equals(old.get(0)))
+                {
+                    props.setProperty(key, excs + "|" + old.get(1));
+                    MCInjectorImpl.log.info("Fixed Exception: " + key + ": " + old.get(0) + " -> " + excs);
+                }
+            }
+        }
+    }
+
     public void saveMap(String mapFile) throws IOException
     {
         Writer mapWriter = null;
         try
         {
+            if (this.generate)
+            {
+                fixExceptions(this.mappings);
+            }
             mapWriter = new FileWriter(mapFile);
             if (this.initIndex > 0)
             {
