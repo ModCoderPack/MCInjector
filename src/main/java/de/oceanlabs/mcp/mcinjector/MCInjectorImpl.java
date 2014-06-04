@@ -60,6 +60,7 @@ public class MCInjectorImpl
     public int initIndex = 0;
     public boolean generate = false;
     private boolean applyMarkers = false;
+    public final InheratanceMap inheratance;
 
     public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index, String classJson, boolean applyMarkers)
         throws IOException
@@ -83,6 +84,7 @@ public class MCInjectorImpl
     {
         this.initIndex = index;
         this.generate = generate;
+        this.inheratance = generate ? new InheratanceMap() : null;
     }
 
     public void loadMap(String mapFile) throws IOException
@@ -321,8 +323,25 @@ public class MCInjectorImpl
         mappings.put(signature, splitMap.get(0) + "|" + params);
     }
 
+    public void setAccess(String signature, InheratanceMap.Access access)
+    {
+        outMappings.put(signature + "-Access", access.toString());
+    }
+
+    public InheratanceMap.Access getAccess(String signature)
+    {
+        String ent = mappings.getProperty(signature + "-Access");
+        if (ent == null) return null;
+        return InheratanceMap.Access.valueOf(ent);
+    }
+
     public void processJar(String inFile, String outFile) throws IOException
     {
+        if (this.inheratance != null)
+        {
+            gatherInheratance(inFile);
+        }
+
         ZipInputStream inJar = null;
         ZipOutputStream outJar = null;
 
@@ -425,6 +444,59 @@ public class MCInjectorImpl
         }
     }
 
+    private void gatherInheratance(String inFile) throws IOException
+    {
+        ZipInputStream inJar = null;
+
+        try
+        {
+            try
+            {
+                inJar = new ZipInputStream(new BufferedInputStream(new FileInputStream(inFile)));
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new FileNotFoundException("Could not open input file: " + e.getMessage());
+            }
+
+            while (true)
+            {
+                ZipEntry entry = inJar.getNextEntry();
+
+                if (entry == null) break;
+                if (entry.isDirectory() || !entry.getName().endsWith(".class")) continue;
+                
+                byte[] data = new byte[4096];
+                ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
+
+                int len;
+                do
+                {
+                    len = inJar.read(data);
+                    if (len > 0)
+                    {
+                        entryBuffer.write(data, 0, len);
+                    }
+                } while (len != -1);
+
+
+                //MCInjectorImpl.log.log(Level.FINEST, "Processing " + entry.getName());
+                inheratance.processClass(entryBuffer.toByteArray());
+            }
+        }
+        finally
+        {
+            if (inJar != null)
+            {
+                try
+                {
+                    inJar.close();
+                }
+                catch (IOException e){}
+            }
+        }
+    }
+
     public byte[] processClass(byte[] cls, boolean readOnly)
     {
         ClassReader cr = new ClassReader(cls);
@@ -449,6 +521,8 @@ public class MCInjectorImpl
             {
                 ca = new GenerateMapClassAdapter(ca, this);
             }
+
+            ca = new AccessFixerClassAdaptor(ca, this);
         }
         ca = new AccessReaderClassAdaptor(ca, this);
         
