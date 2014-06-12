@@ -58,6 +58,7 @@ public class MCInjectorImpl
         }
     };
     public int initIndex = 0;
+    private int classIDIndex = 0;
     public boolean generate = false;
     private boolean applyMarkers = false;
     public final InheratanceMap inheratance;
@@ -103,6 +104,17 @@ public class MCInjectorImpl
             {
                 fixExceptions(this.mappings);
             }
+            for (Object o : this.mappings.keySet())
+            {
+                String key = (String)o;
+                String value = this.mappings.getProperty(key);
+                if (key.indexOf('.') == -1 && value.startsWith("CL_"))
+                {
+                    int idx = Integer.parseInt(value.substring(3));
+                    if (idx > classIDIndex) classIDIndex = idx;
+                }
+            }
+            log.info("Loaded max Class Index: " + ++classIDIndex);
         }
         catch (IOException e)
         {
@@ -277,7 +289,7 @@ public class MCInjectorImpl
         if (marker == null)
         {
             if (!this.generate) return null;
-            marker = String.format("CL_%08d", this.initIndex++);
+            marker = String.format("CL_%08d", this.classIDIndex++);
         }
         outMappings.put(cls, marker);
         return marker;
