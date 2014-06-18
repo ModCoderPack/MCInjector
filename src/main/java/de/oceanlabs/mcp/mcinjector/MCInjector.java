@@ -28,6 +28,7 @@ public class MCInjector
         parser.accepts("index").withRequiredArg().ofType(Integer.class).defaultsTo(0);
         parser.accepts("jsonIn").withRequiredArg();
         parser.accepts("applyMarkers");
+        parser.accepts("generateParams");
 
         try
         {
@@ -52,6 +53,7 @@ public class MCInjector
             String jsonIn  = (String)options.valueOf("jsonIn");
             int index      = (Integer)options.valueOf("index");
             boolean applyM = options.has("applyMarkers");
+            boolean genArgs = options.has("generateParams");
     
             MCInjector.log.setUseParentHandlers(false);
             MCInjector.log.setLevel(Level.ALL);
@@ -83,10 +85,11 @@ public class MCInjector
             log("Mappings:       " + index);
             log("Json:           " + jsonIn);
             log("ApplyMarker:    " + applyM);
+            log("GenArgs:        " + genArgs);
     
             try
             {
-                MCInjectorImpl.process(jarIn, jarOut, mapIn, log, mapOut, index, jsonIn, applyM);
+                MCInjectorImpl.process(jarIn, jarOut, mapIn, log, mapOut, index, jsonIn, applyM, genArgs);
             }
             catch (Exception e)
             {

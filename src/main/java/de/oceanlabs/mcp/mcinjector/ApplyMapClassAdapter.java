@@ -115,7 +115,7 @@ public class ApplyMapClassAdapter extends ClassVisitor
             return mn;
         }
         
-        log.fine("    Applying map:");        
+        log.fine("    Applying map:");
         if (params.size() != types.size())
         {
             log.log(Level.SEVERE, "    Incorrect argument count: " + types.size() + " -> " + params.size());

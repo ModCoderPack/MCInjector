@@ -16,10 +16,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -62,14 +64,25 @@ public class MCInjectorImpl
     public boolean generate = false;
     private boolean applyMarkers = false;
     public final InheratanceMap inheratance;
+    public boolean genParams = false;
 
     public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index, String classJson, boolean applyMarkers)
+        throws IOException
+    {
+        process(inFile, outFile, mapFile, logFile, outMapFile, index, classJson, applyMarkers, false);
+    }
+
+    public static void process(
+            String inFile, String outFile, String mapFile, String logFile, 
+            String outMapFile, int index, String classJson,
+            boolean applyMarkers, boolean genParams)
         throws IOException
     {
         MCInjectorImpl mci = new MCInjectorImpl(index, outMapFile != null);
         mci.loadJson(classJson);
         mci.loadMap(mapFile);
         mci.applyMarkers = applyMarkers;
+        mci.genParams = genParams;
 
         mci.processJar(inFile, outFile);
 
@@ -243,6 +256,21 @@ public class MCInjectorImpl
         }
     }
 
+    private void filterMap(Properties map)
+    {
+        Iterator<Entry<Object, Object>> itr = map.entrySet().iterator();
+        
+        while (itr.hasNext())
+        {
+            Entry<Object, Object> entry = itr.next();
+            String value = (String)entry.getValue();
+            if (value.indexOf('|') < 0)
+                continue;
+            if ("|".equals(value))
+                itr.remove();
+        }
+    }
+
     public void saveMap(String mapFile) throws IOException
     {
         Writer mapWriter = null;
@@ -250,8 +278,9 @@ public class MCInjectorImpl
         {
             if (this.generate)
             {
-                fixExceptions(this.mappings);
+                fixExceptions(this.outMappings);
             }
+            filterMap(this.outMappings);
             mapWriter = new FileWriter(mapFile);
             if (this.initIndex > 0)
             {
@@ -326,7 +355,8 @@ public class MCInjectorImpl
         String curMap = outMappings.getProperty(signature);   
         if (curMap == null) curMap = "|" + params;
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
-        outMappings.put(signature, splitMap.get(0) + "|" + params);
+        if (!genParams || signature.contains("<"))
+            outMappings.put(signature, splitMap.get(0) + "|" + params);
 
         // Add to the input mappings so the generator will power the applier.
         curMap = mappings.getProperty(signature);   
@@ -529,7 +559,7 @@ public class MCInjectorImpl
                 ca = new ApplyMarkerClassAdaptor(ca, this);
             }
     
-            if (generate)
+            if (generate || genParams)
             {
                 ca = new GenerateMapClassAdapter(ca, this);
             }
