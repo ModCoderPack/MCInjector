@@ -73,7 +73,7 @@ public class MCInjectorImpl
     }
 
     public static void process(
-            String inFile, String outFile, String mapFile, String logFile, 
+            String inFile, String outFile, String mapFile, String logFile,
             String outMapFile, int index, String classJson,
             boolean applyMarkers, boolean genParams)
         throws IOException
@@ -110,8 +110,21 @@ public class MCInjectorImpl
             this.mappings.load(mapReader);
             if (initIndex == 0)
             {
-                initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "1000"));
-                log.info("Loaded Max Constructor Index: " + initIndex);
+                //initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "1000"));
+                for (Object o : this.mappings.keySet())
+                {
+                    String key = (String)o;
+                    String value = this.mappings.getProperty(key);
+                    if (key.contains("<init>") && value.contains("|p_i"))
+                    {
+                        value = StringUtil.splitString(value, "|").get(1);
+                        value = StringUtil.splitString(value, ",").get(0);
+                        value = StringUtil.splitString(value, "_").get(1);
+                        int idx = Integer.parseInt(value.substring(1));
+                        if (idx > initIndex) initIndex = idx;
+                    }
+                }
+                log.info("Loaded Max Constructor Index: " + ++initIndex);
             }
             if (this.generate)
             {
@@ -160,7 +173,7 @@ public class MCInjectorImpl
         {
             reader = new FileReader(classJson);
             json.clear();
-            
+
             JsonObject object = (JsonObject)new JsonParser().parse(reader);
             for (Entry<String, JsonElement> entry : object.entrySet())
             {
@@ -259,7 +272,7 @@ public class MCInjectorImpl
     private void filterMap(Properties map)
     {
         Iterator<Entry<Object, Object>> itr = map.entrySet().iterator();
-        
+
         while (itr.hasNext())
         {
             Entry<Object, Object> entry = itr.next();
@@ -332,7 +345,7 @@ public class MCInjectorImpl
         if (splitMap.get(0).equals("")) return new ArrayList<String>();
         return  StringUtil.splitString(splitMap.get(0), ",");
     }
-    
+
     public List<String> getParams(String signature)
     {
         String curMap = mappings.getProperty(signature);
@@ -344,22 +357,22 @@ public class MCInjectorImpl
 
     public void setExceptions(String signature, String excs)
     {
-        String curMap = outMappings.getProperty(signature);   
-        if (curMap == null) curMap = excs + "|"; 
+        String curMap = outMappings.getProperty(signature);
+        if (curMap == null) curMap = excs + "|";
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
         outMappings.put(signature, excs + "|" + splitMap.get(1));
     }
 
     public void setParams(String signature, String params)
     {
-        String curMap = outMappings.getProperty(signature);   
+        String curMap = outMappings.getProperty(signature);
         if (curMap == null) curMap = "|" + params;
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
         if (!genParams || signature.contains("<"))
             outMappings.put(signature, splitMap.get(0) + "|" + params);
 
         // Add to the input mappings so the generator will power the applier.
-        curMap = mappings.getProperty(signature);   
+        curMap = mappings.getProperty(signature);
         if (curMap == null) curMap = "|" + params;
         splitMap = StringUtil.splitString(curMap, "|", -1);
         mappings.put(signature, splitMap.get(0) + "|" + params);
@@ -507,7 +520,7 @@ public class MCInjectorImpl
 
                 if (entry == null) break;
                 if (entry.isDirectory() || !entry.getName().endsWith(".class")) continue;
-                
+
                 byte[] data = new byte[4096];
                 ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
 
@@ -543,7 +556,7 @@ public class MCInjectorImpl
     {
         ClassReader cr = new ClassReader(cls);
         ClassNode cn = new ClassNode();
-        
+
         ClassVisitor ca = cn;
         if (readOnly)
         {
@@ -551,14 +564,14 @@ public class MCInjectorImpl
         }
         else
         {
-            ca = new ApplyMapClassAdapter(cn, this);       
+            ca = new ApplyMapClassAdapter(cn, this);
             ca = new JsonAttributeClassAdaptor(ca, this);
-    
+
             if (applyMarkers)
             {
                 ca = new ApplyMarkerClassAdaptor(ca, this);
             }
-    
+
             if (generate || genParams)
             {
                 ca = new GenerateMapClassAdapter(ca, this);
@@ -567,7 +580,7 @@ public class MCInjectorImpl
             ca = new AccessFixerClassAdaptor(ca, this);
         }
         ca = new AccessReaderClassAdaptor(ca, this);
-        
+
         cr.accept(ca, 0);
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
