@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Set;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -110,10 +109,11 @@ public class MCInjectorImpl
             this.mappings.load(mapReader);
             if (initIndex == 0)
             {
-                //initIndex = Integer.parseInt(mappings.getProperty("max_constructor_index", "1000"));
-                for (Object o : this.mappings.keySet())
+                Map<Integer, String> usedIds = new HashMap<Integer, String>();
+                Iterator<Object> itr = this.mappings.keySet().iterator();
+                while (itr.hasNext())
                 {
-                    String key = (String)o;
+                    String key = (String)itr.next();
                     String value = this.mappings.getProperty(key);
                     if (key.contains("<init>") && value.contains("|p_i"))
                     {
@@ -122,6 +122,16 @@ public class MCInjectorImpl
                         value = StringUtil.splitString(value, "_").get(1);
                         int idx = Integer.parseInt(value.substring(1));
                         if (idx > initIndex) initIndex = idx;
+
+                        if (usedIds.containsKey(idx))
+                        {
+                            log.warning("Duplicate constructor ID mapping: " + idx + " " + usedIds.get(idx) + " " + key);
+                            itr.remove();
+                        }
+                        else
+                        {
+                            usedIds.put(idx, key);
+                        }
                     }
                 }
                 log.info("Loaded Max Constructor Index: " + ++initIndex);
