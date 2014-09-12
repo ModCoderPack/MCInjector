@@ -380,6 +380,9 @@ public class MCInjectorImpl
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
         if (!genParams || signature.contains("<"))
             outMappings.put(signature, splitMap.get(0) + "|" + params);
+        else
+            outMappings.put(signature, splitMap.get(0) + "|"); //Add this so that our exception fixer fixes things in the end. Will be filtered out if empty
+
 
         // Add to the input mappings so the generator will power the applier.
         curMap = mappings.getProperty(signature);
