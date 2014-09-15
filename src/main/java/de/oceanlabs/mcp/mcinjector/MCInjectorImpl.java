@@ -107,7 +107,7 @@ public class MCInjectorImpl
         {
             mapReader = new FileReader(mapFile);
             this.mappings.load(mapReader);
-            if (initIndex == 0)
+            if (initIndex == 0 && generate)
             {
                 Map<Integer, String> usedIds = new HashMap<Integer, String>();
                 Iterator<Object> itr = this.mappings.keySet().iterator();
