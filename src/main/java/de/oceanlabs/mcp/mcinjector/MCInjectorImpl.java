@@ -352,8 +352,9 @@ public class MCInjectorImpl
         String curMap = this.mappings.getProperty(signature);
         if (curMap == null) return new ArrayList<String>();
         List<String> splitMap = StringUtil.splitString(curMap, "|", -1);
-        if (splitMap.get(0).equals("")) return new ArrayList<String>();
-        return  StringUtil.splitString(splitMap.get(0), ",");
+        String exceptions = splitMap.get(0).replace('.', '/'); //Just in case the map is messed up, classes can not have .'s
+        if (exceptions.equals("")) return new ArrayList<String>();
+        return  StringUtil.splitString(exceptions, ",");
     }
 
     public List<String> getParams(String signature)

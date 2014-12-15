@@ -39,21 +39,21 @@ public class GenerateMapClassAdapter extends ClassVisitor
         {
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
-        
+
         log.log(Level.FINE, "  Name: " + name + " Desc: " + desc + " Sig: " + signature);
         String clsSig = this.className + "." + name + desc;
-        
+
 
         // abstract and native methods don't have a Code attribute
         //if ((access & Opcodes.ACC_ABSTRACT) != 0 || (access & Opcodes.ACC_NATIVE) != 0)
         //{
         //    return super.visitMethod(access, name, desc, signature, exceptions);
         //}
-        
+
         List<String> names = new ArrayList<String>();
         List<Type> types = new ArrayList<Type>();
         int idx = 0;
-        
+
         if ((access & Opcodes.ACC_STATIC) == 0)
         {
             idx = 1;
@@ -62,7 +62,7 @@ public class GenerateMapClassAdapter extends ClassVisitor
         }
 
         types.addAll(Arrays.asList(Type.getArgumentTypes(desc)));
-        
+
         //Skip anything with no params
         if (types.size() == 0)
         {
@@ -79,7 +79,7 @@ public class GenerateMapClassAdapter extends ClassVisitor
             generateUnique(idx, clsSig, name, names, types);
         }
 
-        if (names.size() > idx)    
+        if (names.size() > idx)
         {
             mci.setParams(clsSig, StringUtil.joinString(names.subList(idx, names.size()), ","));
         }
@@ -87,7 +87,7 @@ public class GenerateMapClassAdapter extends ClassVisitor
         {
             mci.setParams(clsSig, "");
         }
-        
+
         return super.visitMethod(access, name, desc, signature, exceptions);
     }
 
@@ -112,7 +112,7 @@ public class GenerateMapClassAdapter extends ClassVisitor
             for (int x = idx, y = x; x < types.size(); x++, y++)
             {
                 String desc = types.get(x).getDescriptor();
-                String name = String.format("p_%s_%d_", funcId, y); 
+                String name = String.format("p_%s_%d_", funcId, y);
                 names.add(name);
                 log.fine("      Naming argument " + x + " (" + y + ") -> " + name + " " + desc);
                 if (desc.equals("J") || desc.equals("D")) y++;
