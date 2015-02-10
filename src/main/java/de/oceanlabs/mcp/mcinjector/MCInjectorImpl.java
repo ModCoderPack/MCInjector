@@ -39,6 +39,7 @@ public class MCInjectorImpl
 {
     private final static Logger log = Logger.getLogger("MCInjector");
     public final Map<String, JsonStruct> json = new HashMap<String, JsonStruct>();
+    public final Map<String, JsonStruct.InnerClass> inners = new HashMap<String, JsonStruct.InnerClass>();
     public final Properties mappings = new Properties();
     public final Properties outMappings = new Properties()
     {
@@ -187,7 +188,20 @@ public class MCInjectorImpl
             JsonObject object = (JsonObject)new JsonParser().parse(reader);
             for (Entry<String, JsonElement> entry : object.entrySet())
             {
-                json.put(entry.getKey(), GSON.fromJson(entry.getValue(), JsonStruct.class));
+                String name = entry.getKey();
+                JsonStruct struct = GSON.fromJson(entry.getValue(), JsonStruct.class);
+                json.put(name, struct);
+                if (name.contains("$") && struct.innerClasses != null)
+                {
+                    for (JsonStruct.InnerClass ic : struct.innerClasses)
+                    {
+                        if (name.equals(ic.inner_class))
+                        {
+                            inners.put(name, ic);
+                            break;
+                        }
+                    }
+                }
             }
         }
         catch (IOException e)
