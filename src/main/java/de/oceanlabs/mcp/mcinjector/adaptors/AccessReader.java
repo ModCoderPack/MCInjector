@@ -23,7 +23,7 @@ public class AccessReader extends ClassVisitor
 
     public AccessReader(ClassVisitor cv, MCInjectorImpl mci)
     {
-        super(ASM4, cv);
+        super(ASM5, cv);
         //this.mci = mci;
     }
 
@@ -44,7 +44,7 @@ public class AccessReader extends ClassVisitor
             final AccessInfo info = new AccessInfo(className, name, desc);
             info.access = access;
             methods.put(path, info);
-            
+
             ret = new MethodVisitor(api, ret)
             {
                 // GETSTATIC, PUTSTATIC, GETFIELD or PUTFIELD.
@@ -56,10 +56,10 @@ public class AccessReader extends ClassVisitor
                 }
 
                 // INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or INVOKEINTERFACE.
-                public void visitMethodInsn(int opcode, String owner, String name, String desc)
+                public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf)
                 {
                     info.add(opcode, owner, name, desc);
-                    super.visitMethodInsn(opcode, owner, name, desc);
+                    super.visitMethodInsn(opcode, owner, name, desc, itf);
                 }
             };
         }
@@ -84,7 +84,7 @@ public class AccessReader extends ClassVisitor
         public String desc;
         public int access;
         public List<Insn> insns = new ArrayList<Insn>();
-        
+
         public static class Insn
         {
             public int opcode;
@@ -117,7 +117,7 @@ public class AccessReader extends ClassVisitor
                 return op + " " + target_owner + "/" + target_name + " " + target_desc;
             }
         }
-        
+
         public AccessInfo(String owner, String name, String desc)
         {
             this.owner = owner;
@@ -140,7 +140,7 @@ public class AccessReader extends ClassVisitor
             buf.append(']');
             return buf.toString();
         }
-        
+
         public boolean targetEquals(AccessInfo o)
         {
             return toString().equals(o.toString());

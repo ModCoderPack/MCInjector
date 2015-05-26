@@ -28,7 +28,7 @@ public class ApplyMap extends ClassVisitor
 
     public ApplyMap(ClassNode cn, MCInjectorImpl mci)
     {
-        super(Opcodes.ASM4, cn);
+        super(Opcodes.ASM5, cn);
         this.mci = mci;
         this.cn = cn;
     }
@@ -49,11 +49,11 @@ public class ApplyMap extends ClassVisitor
         {
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
-        
+
         if (!mci.generate) log.log(Level.FINER, "  Name: " + name + " Desc: " + desc + " Sig: " + signature);
 
         String clsSig = this.className + "." + name + desc;
-        
+
         exceptions = processExceptions(clsSig, exceptions);
 
         // abstract and native methods don't have a Code attribute
@@ -111,34 +111,34 @@ public class ApplyMap extends ClassVisitor
         }
 
         types.addAll(Arrays.asList(Type.getArgumentTypes(mn.desc)));
-        
+
         //Skip anything with no params
         if (types.size() == 0)
         {
             return mn;
         }
-        
+
         log.fine("    Applying map:");
         if (params.size() != types.size())
         {
             log.log(Level.SEVERE, "    Incorrect argument count: " + types.size() + " -> " + params.size());
             throw new RuntimeException("Incorrect argument count: " + types.size() + " -> " + params.size());
         }
-        
-        
+
+
         // Add labels to the start and end if they are not already labels
         AbstractInsnNode tmp = mn.instructions.getFirst();
         if (tmp == null)
             mn.instructions.add(new LabelNode());
         else if (tmp.getType() != AbstractInsnNode.LABEL)
             mn.instructions.insertBefore(tmp, new LabelNode());
-        
+
         tmp = mn.instructions.getLast();
         if (tmp == null)
             mn.instructions.add(new LabelNode());
         else if (tmp.getType() != AbstractInsnNode.LABEL)
             mn.instructions.insert(tmp, new LabelNode());
-        
+
         //Grab the start and end labels
         LabelNode start = (LabelNode)mn.instructions.getFirst();
         LabelNode end = (LabelNode)mn.instructions.getLast();

@@ -18,7 +18,7 @@ public class ApplyMarker extends ClassVisitor
 
     public ApplyMarker(ClassVisitor cv, MCInjectorImpl mci)
     {
-        super(Opcodes.ASM4, cv);
+        super(Opcodes.ASM5, cv);
         this.mci = mci;
     }
 

@@ -26,7 +26,7 @@ public class JsonAttribute extends ClassVisitor
 
     public JsonAttribute(ClassVisitor cv, MCInjectorImpl mci)
     {
-        super(Opcodes.ASM4, cv);
+        super(Opcodes.ASM5, cv);
         this.mci = mci;
     }
 

@@ -15,7 +15,7 @@ public class ReadMarker extends ClassVisitor
 
     public ReadMarker(ClassVisitor cv, MCInjectorImpl mci)
     {
-        super(Opcodes.ASM4, cv);
+        super(Opcodes.ASM5, cv);
     }
 
     @Override
