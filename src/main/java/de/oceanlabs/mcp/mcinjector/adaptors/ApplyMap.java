@@ -2,7 +2,11 @@ package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -11,7 +15,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -24,13 +27,11 @@ public class ApplyMap extends ClassVisitor
     private static final Logger log = Logger.getLogger("MCInjector");
     private MCInjectorImpl mci;
     String className;
-    private ClassNode cn;
 
-    public ApplyMap(ClassNode cn, MCInjectorImpl mci)
+    public ApplyMap(ClassVisitor cn, MCInjectorImpl mci)
     {
         super(Opcodes.ASM5, cn);
         this.mci = mci;
-        this.cn = cn;
     }
 
     @Override
@@ -52,7 +53,7 @@ public class ApplyMap extends ClassVisitor
 
         if (!mci.generate) log.log(Level.FINER, "  Name: " + name + " Desc: " + desc + " Sig: " + signature);
 
-        String clsSig = this.className + "." + name + desc;
+        final String clsSig = this.className + "." + name + desc;
 
         exceptions = processExceptions(clsSig, exceptions);
 
@@ -62,9 +63,16 @@ public class ApplyMap extends ClassVisitor
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
 
-        MethodNode mn = (MethodNode)cn.visitMethod(access, name, desc, signature, exceptions);
-        mn = processLVT(className, clsSig, mn);
-        return mn;
+        MethodNode mn = (MethodNode)cv.visitMethod(access, name, desc, signature, exceptions);
+        return new MethodVisitor(api, mn)
+        {
+            @Override
+            public void visitEnd()
+            {
+                super.visitEnd();
+                processLVT(className, clsSig, MCInjectorImpl.getMethodNode(mv));
+            }
+        };
     }
 
     private String[] processExceptions(String clsSig, String[] exceptions)
@@ -143,12 +151,24 @@ public class ApplyMap extends ClassVisitor
         LabelNode start = (LabelNode)mn.instructions.getFirst();
         LabelNode end = (LabelNode)mn.instructions.getLast();
 
-        mn.localVariables = new ArrayList<LocalVariableNode>();
+        Map<Integer, LocalVariableNode> lvt = new HashMap<Integer, LocalVariableNode>();
+        if (mn.localVariables != null)
+        {
+            for (LocalVariableNode lvn : mn.localVariables)
+            {
+                if (lvt.containsKey(lvn.index))
+                {
+                    log.info("  DUPLICATE LVT INDEX: " + lvn.index);
+                }
+                lvt.put(lvn.index, lvn);
+            }
+        }
 
         for (int x = 0, y = x; x < params.size(); x++, y++)
         {
             String arg = params.get(x);
             String desc = types.get(x).getDescriptor();
+            LocalVariableNode lvn = lvt.get(y);
 
             if (arg.equals(""))
             {
@@ -156,12 +176,32 @@ public class ApplyMap extends ClassVisitor
             }
             else
             {
-                log.fine("      Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
-                mn.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, y));
+                if (lvn != null)
+                {
+                    log.fine("      ReNaming argument " + x + " (" + y + "): " + lvn.name + " -> " + arg);
+                    lvn.name = arg;
+                }
+                else
+                {
+                    log.fine("      Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
+                    lvt.put(y, new LocalVariableNode(arg, desc, null, start, end, y));
+                }
             }
 
             if (desc.equals("J") || desc.equals("D")) y++;
         }
+
+        mn.localVariables = new ArrayList<LocalVariableNode>();
+        mn.localVariables.addAll(lvt.values());
+        Collections.sort(mn.localVariables, new Comparator<LocalVariableNode>()
+        {
+            @Override
+            public int compare(LocalVariableNode o1, LocalVariableNode o2)
+            {
+                return (o1.index < o2.index ? -1 : (o1.index == o2.index ? 0 : 1));
+            }
+        });
+
         return mn;
     }
 }

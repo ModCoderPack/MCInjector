@@ -13,10 +13,10 @@ public class MCInjector
 {
     private final static Logger log = Logger.getLogger("MCInjector");
     public static final String VERSION = "MCInjector v3.2 by Searge, LexManos, Fesh0r";
-    
+
     public static void main(String[] args) throws Exception
     {
-        
+
         OptionParser parser = new OptionParser();
         parser.accepts("help").forHelp();
         parser.accepts("version").forHelp();
@@ -29,6 +29,7 @@ public class MCInjector
         parser.accepts("jsonIn").withRequiredArg();
         parser.accepts("applyMarkers");
         parser.accepts("generateParams");
+        parser.accepts("lvt").withRequiredArg().ofType(LVTNaming.class).defaultsTo(LVTNaming.STRIP);
 
         try
         {
@@ -54,10 +55,11 @@ public class MCInjector
             int index      = (Integer)options.valueOf("index");
             boolean applyM = options.has("applyMarkers");
             boolean genArgs = options.has("generateParams");
-    
+            LVTNaming naming = (LVTNaming)options.valueOf("lvt");
+
             MCInjector.log.setUseParentHandlers(false);
             MCInjector.log.setLevel(Level.ALL);
-    
+
             if (log != null)
             {
                 FileHandler filehandler = new FileHandler(log);
@@ -69,13 +71,13 @@ public class MCInjector
                     public void publish(LogRecord record)
                     {
                         System.out.println(String.format(record.getMessage(), record.getParameters()));
-                        
+
                     }
                     @Override public void flush() {}
                     @Override public void close() throws SecurityException {}
                 });
             }
-    
+
             log(MCInjector.VERSION);
             log("Input:          " + jarIn);
             log("Output:         " + jarOut);
@@ -86,10 +88,11 @@ public class MCInjector
             log("Json:           " + jsonIn);
             log("ApplyMarker:    " + applyM);
             log("GenArgs:        " + genArgs);
-    
+            log("LVT:            " + naming);
+
             try
             {
-                MCInjectorImpl.process(jarIn, jarOut, mapIn, log, mapOut, index, jsonIn, applyM, genArgs);
+                MCInjectorImpl.process(jarIn, jarOut, mapIn, log, mapOut, index, jsonIn, applyM, genArgs, naming);
             }
             catch (Exception e)
             {

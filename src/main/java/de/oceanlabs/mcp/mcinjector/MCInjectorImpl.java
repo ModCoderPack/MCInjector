@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -31,7 +32,9 @@ import java.util.zip.ZipOutputStream;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import com.google.gson.*;
 
@@ -41,6 +44,8 @@ import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMap;
 import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMarker;
 import de.oceanlabs.mcp.mcinjector.adaptors.GenerateMap;
 import de.oceanlabs.mcp.mcinjector.adaptors.JsonAttribute;
+import de.oceanlabs.mcp.mcinjector.adaptors.LVTFernflower;
+import de.oceanlabs.mcp.mcinjector.adaptors.LVTStrip;
 import de.oceanlabs.mcp.mcinjector.adaptors.ReadMarker;
 
 public class MCInjectorImpl
@@ -73,17 +78,23 @@ public class MCInjectorImpl
     private boolean applyMarkers = false;
     public final InheratanceMap inheratance;
     public boolean genParams = false;
+    public LVTNaming naming = LVTNaming.STRIP;
 
     public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index, String classJson, boolean applyMarkers)
         throws IOException
     {
         process(inFile, outFile, mapFile, logFile, outMapFile, index, classJson, applyMarkers, false);
     }
+    public static void process(String inFile, String outFile, String mapFile, String logFile, String outMapFile, int index, String classJson, boolean applyMarkers, boolean genParams)
+        throws IOException
+    {
+        process(inFile, outFile, mapFile, logFile, outMapFile, index, classJson, applyMarkers, false, LVTNaming.STRIP);
+    }
 
     public static void process(
             String inFile, String outFile, String mapFile, String logFile,
             String outMapFile, int index, String classJson,
-            boolean applyMarkers, boolean genParams)
+            boolean applyMarkers, boolean genParams, LVTNaming naming)
         throws IOException
     {
         MCInjectorImpl mci = new MCInjectorImpl(index, outMapFile != null);
@@ -91,6 +102,7 @@ public class MCInjectorImpl
         mci.loadMap(mapFile);
         mci.applyMarkers = applyMarkers;
         mci.genParams = genParams;
+        mci.naming = naming;
 
         mci.processJar(inFile, outFile);
 
@@ -600,7 +612,14 @@ public class MCInjectorImpl
         }
         else
         {
-            ca = new ApplyMap(cn, this);
+            ca = new ApplyMap(ca, this);
+
+            switch (naming)
+            {
+                case STRIP:      ca = new LVTStrip     (ca, this); break;
+                case FERNFLOWER: ca = new LVTFernflower(ca, this); break;
+            }
+
             ca = new JsonAttribute(ca, this);
 
             if (applyMarkers)
@@ -624,4 +643,27 @@ public class MCInjectorImpl
         return writer.toByteArray();
     }
 
+    private static Field field_mv;
+    public static MethodNode getMethodNode(MethodVisitor mv)
+    {
+        try
+        {
+            if (field_mv == null)
+            {
+                field_mv = MethodVisitor.class.getDeclaredField("mv");
+                field_mv.setAccessible(true);
+            }
+            MethodVisitor tmp = mv;
+            while (!(tmp instanceof MethodNode) && tmp != null)
+                tmp = (MethodVisitor)field_mv.get(tmp);
+            return (MethodNode)tmp;
+        }
+        catch (Exception e)
+        {
+            if (e instanceof RuntimeException)
+                throw (RuntimeException)e;
+            throw new RuntimeException(e);
+
+        }
+    }
 }
