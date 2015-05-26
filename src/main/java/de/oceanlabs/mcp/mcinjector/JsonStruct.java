@@ -2,6 +2,8 @@ package de.oceanlabs.mcp.mcinjector;
 
 import java.util.ArrayList;
 
+import org.objectweb.asm.Opcodes;
+
 public class JsonStruct
 {
     public EnclosingMethod enclosingMethod = null;
@@ -38,7 +40,9 @@ public class JsonStruct
 
         public int getAccess()
         {
-            return Integer.parseInt(access == null ? "0" : access, 16);
+            int ret = Integer.parseInt(access == null ? "0" : access, 16);
+            ret &= ~Opcodes.ACC_SUPER; //Hack fix for old data, ACC_SUPER is invalid in InnerClasses.
+            return ret;
         }
     }
 
