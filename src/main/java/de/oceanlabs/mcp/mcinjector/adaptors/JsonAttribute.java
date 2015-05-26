@@ -1,4 +1,4 @@
-package de.oceanlabs.mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -10,7 +10,10 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class JsonAttributeClassAdaptor extends ClassVisitor
+import de.oceanlabs.mcp.mcinjector.JsonStruct;
+import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
+
+public class JsonAttribute extends ClassVisitor
 {
     private static final Logger log = Logger.getLogger("MCInjector");
     private MCInjectorImpl mci;
@@ -21,7 +24,7 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
     private Set<String> refedInners = new HashSet<String>();
 
 
-    public JsonAttributeClassAdaptor(ClassVisitor cv, MCInjectorImpl mci)
+    public JsonAttribute(ClassVisitor cv, MCInjectorImpl mci)
     {
         super(Opcodes.ASM4, cv);
         this.mci = mci;

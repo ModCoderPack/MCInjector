@@ -1,4 +1,4 @@
-package de.oceanlabs.mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,14 +16,17 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class ApplyMapClassAdapter extends ClassVisitor
+import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
+import de.oceanlabs.mcp.mcinjector.StringUtil;
+
+public class ApplyMap extends ClassVisitor
 {
     private static final Logger log = Logger.getLogger("MCInjector");
     private MCInjectorImpl mci;
     String className;
     private ClassNode cn;
 
-    public ApplyMapClassAdapter(ClassNode cn, MCInjectorImpl mci)
+    public ApplyMap(ClassNode cn, MCInjectorImpl mci)
     {
         super(Opcodes.ASM4, cn);
         this.mci = mci;

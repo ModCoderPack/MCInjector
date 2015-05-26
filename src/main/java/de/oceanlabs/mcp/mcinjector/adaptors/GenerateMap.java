@@ -1,4 +1,4 @@
-package de.oceanlabs.mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,13 +11,16 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class GenerateMapClassAdapter extends ClassVisitor
+import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
+import de.oceanlabs.mcp.mcinjector.StringUtil;
+
+public class GenerateMap extends ClassVisitor
 {
     private static final Logger log = Logger.getLogger("MCInjector");
     private MCInjectorImpl mci;
     String className;
 
-    public GenerateMapClassAdapter(ClassVisitor cv, MCInjectorImpl mci)
+    public GenerateMap(ClassVisitor cv, MCInjectorImpl mci)
     {
         super(Opcodes.ASM4, cv);
         this.mci = mci;

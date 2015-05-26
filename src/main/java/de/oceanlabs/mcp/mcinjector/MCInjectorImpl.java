@@ -35,6 +35,14 @@ import org.objectweb.asm.tree.ClassNode;
 
 import com.google.gson.*;
 
+import de.oceanlabs.mcp.mcinjector.adaptors.AccessFixer;
+import de.oceanlabs.mcp.mcinjector.adaptors.AccessReader;
+import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMap;
+import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMarker;
+import de.oceanlabs.mcp.mcinjector.adaptors.GenerateMap;
+import de.oceanlabs.mcp.mcinjector.adaptors.JsonAttribute;
+import de.oceanlabs.mcp.mcinjector.adaptors.ReadMarker;
+
 public class MCInjectorImpl
 {
     private final static Logger log = Logger.getLogger("MCInjector");
@@ -588,26 +596,26 @@ public class MCInjectorImpl
         ClassVisitor ca = cn;
         if (readOnly)
         {
-            ca = new ReadMarkerClassAdaptor(ca, this);
+            ca = new ReadMarker(ca, this);
         }
         else
         {
-            ca = new ApplyMapClassAdapter(cn, this);
-            ca = new JsonAttributeClassAdaptor(ca, this);
+            ca = new ApplyMap(cn, this);
+            ca = new JsonAttribute(ca, this);
 
             if (applyMarkers)
             {
-                ca = new ApplyMarkerClassAdaptor(ca, this);
+                ca = new ApplyMarker(ca, this);
             }
 
             if (generate || genParams)
             {
-                ca = new GenerateMapClassAdapter(ca, this);
+                ca = new GenerateMap(ca, this);
             }
 
-            ca = new AccessFixerClassAdaptor(ca, this);
+            ca = new AccessFixer(ca, this);
         }
-        ca = new AccessReaderClassAdaptor(ca, this);
+        ca = new AccessReader(ca, this);
 
         cr.accept(ca, 0);
 

@@ -1,4 +1,4 @@
-package de.oceanlabs.mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -12,14 +12,16 @@ import java.util.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-public class AccessReaderClassAdaptor extends ClassVisitor
+import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
+
+public class AccessReader extends ClassVisitor
 {
     private static final Logger log = Logger.getLogger("MCInjector");
     //private MCInjectorImpl mci;
     private String className;
     private Map<String, AccessInfo> methods = new HashMap<String, AccessInfo>();
 
-    public AccessReaderClassAdaptor(ClassVisitor cv, MCInjectorImpl mci)
+    public AccessReader(ClassVisitor cv, MCInjectorImpl mci)
     {
         super(ASM4, cv);
         //this.mci = mci;

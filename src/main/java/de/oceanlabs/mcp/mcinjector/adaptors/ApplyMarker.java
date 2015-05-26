@@ -1,4 +1,4 @@
-package de.oceanlabs.mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import java.util.logging.Logger;
 
@@ -6,16 +6,17 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 import static org.objectweb.asm.Opcodes.*;
 
-public class ApplyMarkerClassAdaptor extends ClassVisitor
+public class ApplyMarker extends ClassVisitor
 {
     private static final Logger log = Logger.getLogger("MCInjector");
     private MCInjectorImpl mci;
     private String className;
     private int FLAGS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL;
 
-    public ApplyMarkerClassAdaptor(ClassVisitor cv, MCInjectorImpl mci)
+    public ApplyMarker(ClassVisitor cv, MCInjectorImpl mci)
     {
         super(Opcodes.ASM4, cv);
         this.mci = mci;

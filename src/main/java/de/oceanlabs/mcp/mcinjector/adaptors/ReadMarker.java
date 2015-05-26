@@ -1,4 +1,4 @@
-package de.oceanlabs.mcp.mcinjector;
+package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import java.util.logging.Logger;
 
@@ -6,12 +6,14 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class ReadMarkerClassAdaptor extends ClassVisitor
+import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
+
+public class ReadMarker extends ClassVisitor
 {
     private static final Logger log = Logger.getLogger("MCInjector");
     private String className;
 
-    public ReadMarkerClassAdaptor(ClassVisitor cv, MCInjectorImpl mci)
+    public ReadMarker(ClassVisitor cv, MCInjectorImpl mci)
     {
         super(Opcodes.ASM4, cv);
     }
