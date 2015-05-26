@@ -20,7 +20,7 @@ public class AccessFixer extends ClassVisitor
 
     public AccessFixer(ClassVisitor cv, MCInjectorImpl mci)
     {
-        super(ASM4, cv);
+        super(ASM5, cv);
         this.mci = mci;
     }
 
