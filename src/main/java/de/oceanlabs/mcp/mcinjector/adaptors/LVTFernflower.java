@@ -45,7 +45,7 @@ public class LVTFernflower extends ClassVisitor
                     {
                         if (0x2603 != lvn.name.charAt(0)) // Snowmen, added in 1.8.2? rename them to FF names
                             continue;
-                        log.info("    Renaming LVT: " + lvn.index + " " + lvn.name + " " +lvn.desc + " -> " + "var" + lvn.index);
+                        log.info("    Renaming LVT: " + lvn.index + " " + lvn.name + " " + lvn.desc + " -> " + "var" + lvn.index);
                         lvn.name = "var" + lvn.index;
                     }
                 }
