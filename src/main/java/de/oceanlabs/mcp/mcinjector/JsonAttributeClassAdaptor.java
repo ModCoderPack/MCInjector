@@ -93,7 +93,15 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
         for (Type t : Type.getArgumentTypes(desc))
             referenced(t);
 
-        return super.visitMethod(access, name, desc, signature, exceptions);
+        return new MethodVisitor(api, super.visitMethod(access, name, desc, signature, exceptions))
+        {
+            public void visitLdcInsn(final Object cst)
+            {
+                if (cst instanceof Type)
+                    referenced((Type)cst);
+                super.visitLdcInsn(cst);
+            }
+        };
     }
 
     @Override
@@ -113,36 +121,33 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
     @Override
     public void visitEnd()
     {
-        if (json == null)
+        if (json != null)
         {
-            super.visitEnd();
-            return;
-        }
-
-        JsonStruct.EnclosingMethod enc = json.enclosingMethod;
-        if (enc != null && !visitedOuter && enc.name != null && enc.desc != null)
-        {
-            log.fine("  Adding Outer Class:");
-            log.fine("    Owner: " + enc.owner);
-            log.fine("    Method: " + enc.name + enc.desc);
-            super.visitOuterClass(enc.owner, enc.name, enc.desc);
-        }
-
-        if (json.innerClasses != null)
-        {
-            for (JsonStruct.InnerClass inner : json.innerClasses)
+            JsonStruct.EnclosingMethod enc = json.enclosingMethod;
+            if (enc != null && !visitedOuter && enc.name != null && enc.desc != null)
             {
-                if (!visitedInners.contains(inner.inner_class))
+                log.fine("  Adding Outer Class:");
+                log.fine("    Owner: " + enc.owner);
+                log.fine("    Method: " + enc.name + enc.desc);
+                super.visitOuterClass(enc.owner, enc.name, enc.desc);
+            }
+
+            if (json.innerClasses != null)
+            {
+                for (JsonStruct.InnerClass inner : json.innerClasses)
                 {
-                    visitedInners.add(inner.inner_class);
-                    log.fine("  Adding Inner Class:");
-                    log.fine("    Inner: " + inner.inner_class);
-                    log.fine("    Access: " + getAccess(inner.getAccess()));
-                    if (inner.outer_class != null)
-                        log.fine("    Outer: "+ inner.outer_class);
-                    if (inner.inner_name != null)
-                        log.fine("    Name: " + inner.inner_name);
-                    super.visitInnerClass(inner.inner_class, inner.outer_class, inner.inner_name, inner.getAccess());
+                    if (!visitedInners.contains(inner.inner_class))
+                    {
+                        visitedInners.add(inner.inner_class);
+                        log.fine("  Adding Inner Class:");
+                        log.fine("    Inner: " + inner.inner_class);
+                        log.fine("    Access: " + getAccess(inner.getAccess()));
+                        if (inner.outer_class != null)
+                            log.fine("    Outer: "+ inner.outer_class);
+                        if (inner.inner_name != null)
+                            log.fine("    Name: " + inner.inner_name);
+                        super.visitInnerClass(inner.inner_class, inner.outer_class, inner.inner_name, inner.getAccess());
+                    }
                 }
             }
         }
@@ -153,7 +158,11 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
             JsonStruct.InnerClass ic = mci.inners.get(inner);
             if (ic == null)
             {
-                log.fine("  Referenced Inner Class: " + inner + " (missing)");
+                log.fine("  Referenced Inner Class: " + inner + " (missing) assuming defaults");
+                int idx = inner.lastIndexOf('$');
+                String outer = inner.substring(0, idx);
+                String name  = inner.substring(idx + 1);
+                super.visitInnerClass(inner, outer, name, Opcodes.ACC_PUBLIC); //Hacky, but ASSUME public
             }
             else
             {
@@ -164,7 +173,10 @@ public class JsonAttributeClassAdaptor extends ClassVisitor
                     log.fine("    Outer: "+ ic.outer_class);
                 if (ic.inner_name != null)
                     log.fine("    Name: " + ic.inner_name);
+                super.visitInnerClass(ic.inner_class, ic.outer_class, ic.inner_name, ic.getAccess());
             }
         }
+
+        super.visitEnd();
     }
 }
