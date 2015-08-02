@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -133,7 +135,6 @@ public class ApplyMap extends ClassVisitor
             throw new RuntimeException("Incorrect argument count: " + types.size() + " -> " + params.size());
         }
 
-
         // Add labels to the start and end if they are not already labels
         AbstractInsnNode tmp = mn.instructions.getFirst();
         if (tmp == null)
@@ -147,52 +148,45 @@ public class ApplyMap extends ClassVisitor
         else if (tmp.getType() != AbstractInsnNode.LABEL)
             mn.instructions.insert(tmp, new LabelNode());
 
-        //Grab the start and end labels
-        LabelNode start = (LabelNode)mn.instructions.getFirst();
-        LabelNode end = (LabelNode)mn.instructions.getLast();
-
-        Map<Integer, LocalVariableNode> lvt = new HashMap<Integer, LocalVariableNode>();
-        if (mn.localVariables != null)
-        {
-            for (LocalVariableNode lvn : mn.localVariables)
-            {
-                if (lvt.containsKey(lvn.index))
-                {
-                    log.info("  DUPLICATE LVT INDEX: " + lvn.index);
-                }
-                lvt.put(lvn.index, lvn);
-            }
-        }
-
-        for (int x = 0, y = x; x < params.size(); x++, y++)
+        Map<Integer, String> parNames = new HashMap<Integer, String>();
+        for (int x = 0, y = 0; x < params.size(); x++, y++)
         {
             String arg = params.get(x);
             String desc = types.get(x).getDescriptor();
-            LocalVariableNode lvn = lvt.get(y);
-
-            if (arg.equals(""))
-            {
-                log.fine("      Skipping argument " + x + " (" + y + ") -> " + desc);
-            }
-            else
-            {
-                if (lvn != null)
-                {
-                    log.fine("      ReNaming argument " + x + " (" + y + "): " + lvn.name + " -> " + arg);
-                    lvn.name = arg;
-                }
-                else
-                {
-                    log.fine("      Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
-                    lvt.put(y, new LocalVariableNode(arg, desc, null, start, end, y));
-                }
-            }
-
+            parNames.put(y, arg);
             if (desc.equals("J") || desc.equals("D")) y++;
         }
 
-        mn.localVariables = new ArrayList<LocalVariableNode>();
-        mn.localVariables.addAll(lvt.values());
+        //Grab the start and end labels
+        LabelNode start = (LabelNode)mn.instructions.getFirst();
+        LabelNode end = (LabelNode)mn.instructions.getLast();
+        Set<Integer> found = new HashSet<Integer>();
+
+        if (mn.localVariables == null)
+            mn.localVariables = new ArrayList<LocalVariableNode>();
+
+        for (LocalVariableNode lvn : mn.localVariables)
+        {
+            String name = parNames.get(lvn.index);
+            if (name != null)
+            {
+                log.fine("      ReNaming argument (" + lvn.index + "): " + lvn.name + " -> " + name);
+                lvn.name = name;
+                found.add(lvn.index);
+            }
+        }
+        for (int x = 0, y = 0; x < params.size(); x++, y++)
+        {
+            String arg = params.get(x);
+            String desc = types.get(x).getDescriptor();
+            if (found.contains(y))
+                continue;
+
+            log.fine("      Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
+            mn.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, y));
+            if (desc.equals("J") || desc.equals("D")) y++;
+        }
+
         Collections.sort(mn.localVariables, new Comparator<LocalVariableNode>()
         {
             @Override
