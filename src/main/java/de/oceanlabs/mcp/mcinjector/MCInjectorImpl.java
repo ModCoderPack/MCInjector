@@ -45,6 +45,7 @@ import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMarker;
 import de.oceanlabs.mcp.mcinjector.adaptors.GenerateMap;
 import de.oceanlabs.mcp.mcinjector.adaptors.JsonAttribute;
 import de.oceanlabs.mcp.mcinjector.adaptors.LVTFernflower;
+import de.oceanlabs.mcp.mcinjector.adaptors.LVTLvt;
 import de.oceanlabs.mcp.mcinjector.adaptors.LVTStrip;
 import de.oceanlabs.mcp.mcinjector.adaptors.ReadMarker;
 
@@ -618,6 +619,7 @@ public class MCInjectorImpl
             {
                 case STRIP:      ca = new LVTStrip     (ca, this); break;
                 case FERNFLOWER: ca = new LVTFernflower(ca, this); break;
+                case LVT:        ca = new LVTLvt       (ca, this); break;
             }
 
             ca = new JsonAttribute(ca, this);
