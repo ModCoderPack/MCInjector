@@ -668,4 +668,28 @@ public class MCInjectorImpl
 
         }
     }
+
+    private static Field field_cv;
+    public static ClassNode getClassNode(ClassVisitor cv)
+    {
+        try
+        {
+            if (field_cv == null)
+            {
+                field_cv = ClassVisitor.class.getDeclaredField("cv");
+                field_cv.setAccessible(true);
+            }
+            ClassVisitor tmp = cv;
+            while (!(tmp instanceof ClassNode) && tmp != null)
+                tmp = (ClassVisitor)field_cv.get(tmp);
+            return (ClassNode)tmp;
+        }
+        catch (Exception e)
+        {
+            if (e instanceof RuntimeException)
+                throw (RuntimeException)e;
+            throw new RuntimeException(e);
+
+        }
+    }
 }
