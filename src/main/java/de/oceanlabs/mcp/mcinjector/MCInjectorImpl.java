@@ -379,6 +379,7 @@ public class MCInjectorImpl
             marker = String.format("CL_%08d", this.classIDIndex++);
         }
         outMappings.put(cls, marker);
+        mappings.put(cls,marker);
         return marker;
     }
 
