@@ -14,6 +14,7 @@ import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
 
 public abstract class LVTRenamer extends ClassVisitor
 {
+    private static final boolean DEBUG = Boolean.parseBoolean(System.getProperty("mci.printLVTRenames", "false"));
     private static final Logger log = Logger.getLogger("MCInjector");
     private MCInjectorImpl mci;
     String className;
@@ -90,7 +91,8 @@ public abstract class LVTRenamer extends ClassVisitor
                         }
                         name += suffix + "_";
                     }
-                    log.info("    Renaming LVT: " + lvn.index + " " + lvn.name + " " + lvn.desc + " -> " + name);
+                    if (DEBUG)
+                        log.info("    Renaming LVT: " + lvn.index + " " + lvn.name + " " + lvn.desc + " -> " + name);
                     lvn.name = name;
                 }
             }
