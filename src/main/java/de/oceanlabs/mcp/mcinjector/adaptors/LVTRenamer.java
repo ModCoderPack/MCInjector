@@ -48,7 +48,7 @@ public abstract class LVTRenamer extends ClassVisitor
         String suffix = null;
         if (isInMethod)
         {
-            String tmp = mci.getMarker(className);
+            String tmp = mci.getMarker(className, false);
             if (tmp != null) {
                 tmp = tmp.replace("CL_", "");
                 while (tmp.charAt(0) == '0')

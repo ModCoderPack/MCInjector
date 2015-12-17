@@ -370,12 +370,13 @@ public class MCInjectorImpl
         }
     }
 
-    public String getMarker(String cls)
+    public String getMarker(String cls){ return getMarker(cls, true); }
+    public String getMarker(String cls, boolean allowGen)
     {
         String marker = this.mappings.getProperty(cls);
         if (marker == null)
         {
-            if (!this.generate) return null;
+            if (!this.generate || !allowGen) return null;
             marker = String.format("CL_%08d", this.classIDIndex++);
         }
         outMappings.put(cls, marker);
