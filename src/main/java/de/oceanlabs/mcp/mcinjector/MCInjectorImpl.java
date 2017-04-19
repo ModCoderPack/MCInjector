@@ -43,6 +43,7 @@ import de.oceanlabs.mcp.mcinjector.adaptors.AccessReader;
 import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMap;
 import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMarker;
 import de.oceanlabs.mcp.mcinjector.adaptors.GenerateMap;
+import de.oceanlabs.mcp.mcinjector.adaptors.InnerClassInitAdder;
 import de.oceanlabs.mcp.mcinjector.adaptors.JsonAttribute;
 import de.oceanlabs.mcp.mcinjector.adaptors.LVTFernflower;
 import de.oceanlabs.mcp.mcinjector.adaptors.LVTLvt;
@@ -639,6 +640,8 @@ public class MCInjectorImpl
             ca = new AccessFixer(ca, this);
         }
         ca = new AccessReader(ca, this);
+
+        ca = new InnerClassInitAdder(ca);
 
         cr.accept(ca, 0);
 
