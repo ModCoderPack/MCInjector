@@ -48,6 +48,7 @@ import de.oceanlabs.mcp.mcinjector.adaptors.JsonAttribute;
 import de.oceanlabs.mcp.mcinjector.adaptors.LVTFernflower;
 import de.oceanlabs.mcp.mcinjector.adaptors.LVTLvt;
 import de.oceanlabs.mcp.mcinjector.adaptors.LVTStrip;
+import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
 import de.oceanlabs.mcp.mcinjector.adaptors.ReadMarker;
 
 public class MCInjectorImpl
@@ -638,6 +639,8 @@ public class MCInjectorImpl
             }
 
             ca = new AccessFixer(ca, this);
+
+            ca = new ParameterAnnotationFixer(ca, this);
         }
         ca = new AccessReader(ca, this);
 
