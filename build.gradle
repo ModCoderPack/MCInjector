@@ -24,10 +24,12 @@ repositories {
 
 jar {
     manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
+    manifest.attributes('Implementation-Version': project.version)
 }
 shadowJar {
     classifier 'fatjar'
     manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
+    manifest.attributes('Implementation-Version': project.version)
 }
 
 artifacts {
