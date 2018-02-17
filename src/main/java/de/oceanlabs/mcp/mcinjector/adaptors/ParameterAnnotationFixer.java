@@ -22,7 +22,17 @@ public class ParameterAnnotationFixer extends ClassVisitor
 
     public ParameterAnnotationFixer(ClassVisitor cn, MCInjectorImpl mci)
     {
-        super(Opcodes.ASM5, cn);
+        super(Opcodes.ASM6, cn);
+        // Extra version check, since these were added in ASM 6.1 and there
+        // isn't a constant for it
+        try {
+            MethodNode.class.getField("visibleAnnotableParameterCount");
+            MethodNode.class.getField("invisibleAnnotableParameterCount");
+        } catch (Exception ex) {
+            throw new IllegalArgumentException(
+                    "AnnotableParameterCount fields are not present -- wrong ASM version?",
+                    ex);
+        }
     }
 
     @Override
@@ -123,6 +133,16 @@ public class ParameterAnnotationFixer extends ClassVisitor
             mn.invisibleParameterAnnotations = process(methodInfo,
                     "RuntimeInvisibleParameterAnnotations", params.length,
                     syntheticParams.length, mn.invisibleParameterAnnotations);
+            // ASM uses this value, not the length of the array
+            // Note that this was added in ASM 6.1
+            if (mn.visibleParameterAnnotations != null)
+            {
+                mn.visibleAnnotableParameterCount = mn.visibleParameterAnnotations.length;
+            }
+            if (mn.invisibleParameterAnnotations != null)
+            {
+                mn.invisibleAnnotableParameterCount = mn.invisibleParameterAnnotations.length;
+            }
         }
         else
         {
