@@ -24,10 +24,12 @@ repositories {
 
 jar {
     manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
+    manifest.attributes('Implementation-Version': project.version)
 }
 shadowJar {
     classifier 'fatjar'
     manifest.attributes('Main-Class': 'de.oceanlabs.mcp.mcinjector.MCInjector')
+    manifest.attributes('Implementation-Version': project.version)
 }
 
 artifacts {
@@ -36,8 +38,8 @@ artifacts {
 }
 
 dependencies {
-    compile 'org.ow2.asm:asm:6.0'
-    compile 'org.ow2.asm:asm-tree:6.0'
+    compile 'org.ow2.asm:asm:6.1-beta2'
+    compile 'org.ow2.asm:asm-tree:6.1-beta2'
     compile 'net.sf.jopt-simple:jopt-simple:4.5'
     compile 'com.google.code.gson:gson:2.2.4'
 }

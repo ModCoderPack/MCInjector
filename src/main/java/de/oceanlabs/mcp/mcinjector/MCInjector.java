@@ -12,7 +12,14 @@ import joptsimple.OptionSet;
 public class MCInjector
 {
     private final static Logger log = Logger.getLogger("MCInjector");
-    public static final String VERSION = "MCInjector v3.4 by Searge, LexManos, Fesh0r";
+    public static final String VERSION;
+    static {
+        String implVersion = MCInjector.class.getPackage().getImplementationVersion();
+        if (implVersion == null) {
+            implVersion = "Unknown";
+        }
+        VERSION = "MCInjector v" + implVersion + " by Searge, LexManos, Fesh0r";
+    }
 
     public static void main(String[] args) throws Exception
     {
