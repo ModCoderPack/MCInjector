@@ -1,16 +1,14 @@
-package de.oceanlabs.mcp.mcinjector.adaptors;
+package de.oceanlabs.mcp.mcinjector.lvt;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
-
 public class LVTFernflower extends LVTRenamer
 {
-    public LVTFernflower(ClassVisitor cn, MCInjectorImpl mci)
+    public LVTFernflower(ClassVisitor cn)
     {
-        super(cn, mci);
+        super(cn);
     }
 
     @Override

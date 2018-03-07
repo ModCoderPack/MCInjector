@@ -3,14 +3,12 @@ package de.oceanlabs.mcp.mcinjector.adaptors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -21,25 +19,23 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.oceanlabs.mcp.mcinjector.MCInjector;
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
-import de.oceanlabs.mcp.mcinjector.StringUtil;
+import de.oceanlabs.mcp.mcinjector.data.Constructors;
+import de.oceanlabs.mcp.mcinjector.data.Exceptions;
 
 public class ApplyMap extends ClassVisitor
 {
-    private static final Logger log = Logger.getLogger("MCInjector");
-    private MCInjectorImpl mci;
     String className;
 
-    public ApplyMap(ClassVisitor cn, MCInjectorImpl mci)
+    public ApplyMap(ClassVisitor cn)
     {
-        super(Opcodes.ASM5, cn);
-        this.mci = mci;
+        super(Opcodes.ASM6, cn);
     }
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
     {
-        if (!mci.generate) log.log(Level.FINE, "Class: " + name + " Extends: " + superName);
         this.className = name;
         super.visit(version, access, name, signature, superName, interfaces);
     }
@@ -53,11 +49,7 @@ public class ApplyMap extends ClassVisitor
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
 
-        if (!mci.generate) log.log(Level.FINER, "  Name: " + name + " Desc: " + desc + " Sig: " + signature);
-
-        final String clsSig = this.className + "." + name + desc;
-
-        exceptions = processExceptions(clsSig, exceptions);
+        exceptions = processExceptions(className, name, desc, exceptions);
 
         // abstract and native methods don't have a Code attribute
         if ((access & Opcodes.ACC_ABSTRACT) != 0 || (access & Opcodes.ACC_NATIVE) != 0)
@@ -65,58 +57,46 @@ public class ApplyMap extends ClassVisitor
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
 
-        MethodNode mn = (MethodNode)cv.visitMethod(access, name, desc, signature, exceptions);
-        return new MethodVisitor(api, mn)
+        return new MethodVisitor(api, cv.visitMethod(access, name, desc, signature, exceptions))
         {
             @Override
             public void visitEnd()
             {
                 super.visitEnd();
-                processLVT(className, clsSig, MCInjectorImpl.getMethodNode(mv));
+                processLVT(className, name, desc, MCInjectorImpl.getMethodNode(mv));
             }
         };
     }
 
-    private String[] processExceptions(String clsSig, String[] exceptions)
+    private String[] processExceptions(String cls, String name, String desc, String[] exceptions)
     {
-        List<String> map = mci.getExceptions(clsSig);
-        //If we have exceptions lets add any that are not in the mapping
+        Set<String> set = new HashSet<>();
+        for (String s :  Exceptions.INSTANCE.getExceptions(cls, name, desc))
+            set.add(s);
         if (exceptions != null)
         {
             for (String s : exceptions)
-            {
-                if (!map.contains(s))
-                {
-                    map.add(s);
-                }
-            }
+                set.add(s);
         }
 
-        if (map.size() > 0)
+        if (set.size() > (exceptions == null ? 0 : exceptions.length))
         {
-            String excs = StringUtil.joinString(map, ",");
-            exceptions = map.toArray(new String[map.size()]);
-            log.log(Level.FINE, "    Adding Exceptions: " + excs);
-            mci.setExceptions(clsSig, excs);
+            exceptions = set.stream().sorted().toArray(x -> new String[x]);
+            Exceptions.INSTANCE.setExceptions(cls, name, desc, exceptions);
+            MCInjector.LOG.log(Level.FINE, "    Adding Exceptions: " + String.join(", ", exceptions));
         }
 
         return exceptions;
     }
 
-    private MethodNode processLVT(String clsName, String classSig, MethodNode mn)
+    private void processLVT(String cls, String name, String desc, MethodNode mn)
     {
-        List<String> params = mci.getParams(classSig);
-        //No params to add skip it.
-        if (params.size() == 0)
-        {
-            return mn;
-        }
-
-        List<Type> types = new ArrayList<Type>();
+        List<String> params = new ArrayList<>();
+        List<Type> types = new ArrayList<>();
 
         if ((mn.access & Opcodes.ACC_STATIC) == 0)
         {
-            types.add(Type.getType("L" + clsName + ";"));
+            types.add(Type.getType("L" + cls + ";"));
             params.add(0, "this");
         }
 
@@ -124,14 +104,27 @@ public class ApplyMap extends ClassVisitor
 
         //Skip anything with no params
         if (types.size() == 0)
+            return;
+
+        MCInjector.LOG.fine("    Generating map:");
+        String nameFormat = "p_" + name + "_%d_";
+        if (name.matches("func_\\d+_.+")) // A srg name method params are just p_MethodID_ParamIndex_
+            nameFormat = "p_" + name.substring(5, name.indexOf('_', 5)) + "_%s_";
+        else if (name.equals("<init>")) // Every constructor is given a unique ID, try to load the ID from the map, if none is found assign a new one
+            nameFormat = "p_i" + Constructors.INSTANCE.getID(className, desc, types.size() > 1) + "_%s_";
+
+        for (int x = params.size(), y = x; x < types.size(); x++)
         {
-            return mn;
+            String par_name = String.format(nameFormat, y);
+            params.add(par_name);
+            MCInjector.LOG.fine("      Naming argument " + x + " (" + y + ") -> " + par_name + " " + types.get(x).getDescriptor());
+            y += types.get(x).getSize();
         }
 
-        log.fine("    Applying map:");
+        MCInjector.LOG.fine("    Applying map:");
         if (params.size() != types.size())
         {
-            log.log(Level.SEVERE, "    Incorrect argument count: " + types.size() + " -> " + params.size());
+            MCInjector.LOG.log(Level.SEVERE, "    Incorrect argument count: " + types.size() + " -> " + params.size());
             throw new RuntimeException("Incorrect argument count: " + types.size() + " -> " + params.size());
         }
 
@@ -149,12 +142,10 @@ public class ApplyMap extends ClassVisitor
             mn.instructions.insert(tmp, new LabelNode());
 
         Map<Integer, String> parNames = new HashMap<Integer, String>();
-        for (int x = 0, y = 0; x < params.size(); x++, y++)
+        for (int x = 0, y = 0; x < params.size(); x++)
         {
-            String arg = params.get(x);
-            String desc = types.get(x).getDescriptor();
-            parNames.put(y, arg);
-            if (desc.equals("J") || desc.equals("D")) y++;
+            parNames.put(y, params.get(x));
+            y += types.get(x).getSize();
         }
 
         //Grab the start and end labels
@@ -167,35 +158,25 @@ public class ApplyMap extends ClassVisitor
 
         for (LocalVariableNode lvn : mn.localVariables)
         {
-            String name = parNames.get(lvn.index);
-            if (name != null)
+            String par_name = parNames.get(lvn.index);
+            if (par_name != null)
             {
-                log.fine("      ReNaming argument (" + lvn.index + "): " + lvn.name + " -> " + name);
-                lvn.name = name;
+                MCInjector.LOG.fine("      ReNaming argument (" + lvn.index + "): " + lvn.name + " -> " + par_name);
+                lvn.name = par_name;
                 found.add(lvn.index);
             }
         }
-        for (int x = 0, y = 0; x < params.size(); x++, y++)
+        for (int x = 0, y = 0; x < params.size(); x++)
         {
             String arg = params.get(x);
-            String desc = types.get(x).getDescriptor();
-            if (found.contains(y))
-                continue;
-
-            log.fine("      Naming argument " + x + " (" + y + ") -> " + arg + " " + desc);
-            mn.localVariables.add(new LocalVariableNode(arg, desc, null, start, end, y));
-            if (desc.equals("J") || desc.equals("D")) y++;
+            if (!found.contains(y))
+            {
+                MCInjector.LOG.fine("      Naming argument " + x + " (" + y + ") -> " + arg + " " + types.get(x).getDescriptor());
+                mn.localVariables.add(new LocalVariableNode(arg, types.get(x).getDescriptor(), null, start, end, y));
+            }
+            y += types.get(x).getSize();
         }
 
-        Collections.sort(mn.localVariables, new Comparator<LocalVariableNode>()
-        {
-            @Override
-            public int compare(LocalVariableNode o1, LocalVariableNode o2)
-            {
-                return (o1.index < o2.index ? -1 : (o1.index == o2.index ? 0 : 1));
-            }
-        });
-
-        return mn;
+        Collections.sort(mn.localVariables, (o1, o2) -> o1.index < o2.index ? -1 : (o1.index == o2.index ? 0 : 1));
     }
 }

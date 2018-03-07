@@ -1,4 +1,4 @@
-package de.oceanlabs.mcp.mcinjector.adaptors;
+package de.oceanlabs.mcp.mcinjector.lvt;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,16 +7,14 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
-
 public class LVTLvt extends LVTRenamer
 {
     private MethodNode lastMethod = null;
     private Map<Integer, Integer> vers = null;
 
-    public LVTLvt(ClassVisitor cn, MCInjectorImpl mci)
+    public LVTLvt(ClassVisitor cn)
     {
-        super(cn, mci);
+        super(cn);
     }
 
     @Override
