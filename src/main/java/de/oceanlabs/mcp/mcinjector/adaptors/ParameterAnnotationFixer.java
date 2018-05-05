@@ -2,6 +2,7 @@ package de.oceanlabs.mcp.mcinjector.adaptors;
 
 import static org.objectweb.asm.Opcodes.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -22,16 +23,24 @@ public class ParameterAnnotationFixer extends ClassVisitor
 
     public ParameterAnnotationFixer(ClassVisitor cn, MCInjectorImpl mci)
     {
-        super(Opcodes.ASM6, cn);
-        // Extra version check, since these were added in ASM 6.1 and there
-        // isn't a constant for it
-        try {
+        super(Opcodes.ASM5, cn);
+        // Extra version check, since marking as synthetic does not work in ASM 6.1
+        // (a different technique must be used then)
+        boolean asm61;
+        try
+        {
             MethodNode.class.getField("visibleAnnotableParameterCount");
             MethodNode.class.getField("invisibleAnnotableParameterCount");
-        } catch (Exception ex) {
-            throw new IllegalArgumentException(
-                    "AnnotableParameterCount fields are not present -- wrong ASM version?",
-                    ex);
+            asm61 = true;
+        }
+        catch (Exception ex)
+        {
+            asm61 = false;
+        }
+        if (asm61)
+        {
+            throw new UnsupportedOperationException(
+                    "Parameter annotation fixer only works with ASM 6.0 and below, not ASM 6.1");
         }
     }
 
@@ -133,16 +142,6 @@ public class ParameterAnnotationFixer extends ClassVisitor
             mn.invisibleParameterAnnotations = process(methodInfo,
                     "RuntimeInvisibleParameterAnnotations", params.length,
                     syntheticParams.length, mn.invisibleParameterAnnotations);
-            // ASM uses this value, not the length of the array
-            // Note that this was added in ASM 6.1
-            if (mn.visibleParameterAnnotations != null)
-            {
-                mn.visibleAnnotableParameterCount = mn.visibleParameterAnnotations.length;
-            }
-            if (mn.invisibleParameterAnnotations != null)
-            {
-                mn.invisibleAnnotableParameterCount = mn.invisibleParameterAnnotations.length;
-            }
         }
         else
         {
@@ -165,6 +164,16 @@ public class ParameterAnnotationFixer extends ClassVisitor
             }
         }
         return true;
+    }
+
+    /**
+     * An annotation that marks the given parameter annotation for removal.
+     * ASM 6.0 and below internally remove these in MethodWriter.visitParameterAnnotation
+     * so manually adding them allows us to mark annotations entries for removal.
+     */
+    private static final List<AnnotationNode> SYNTHETIC_NODE = new ArrayList<AnnotationNode>();
+    {
+        SYNTHETIC_NODE.add(new AnnotationNode("Ljava/lang/Synthetic;"));
     }
 
     /**
@@ -198,9 +207,9 @@ public class ParameterAnnotationFixer extends ClassVisitor
         if (numParams == numAnnotations)
         {
             LOGGER.info("Found extra " + attributeName + " entries in "
-                    + methodInfo + ": removing " + numSynthetic);
-            return Arrays.copyOfRange(annotations, numSynthetic,
-                    numAnnotations);
+                    + methodInfo + ": marking " + numSynthetic + " as synthetic");
+            Arrays.fill(annotations, 0, numSynthetic, SYNTHETIC_NODE);
+            return annotations;
         }
         else if (numParams == numAnnotations - numSynthetic)
         {
