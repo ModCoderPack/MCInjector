@@ -1,27 +1,33 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
-    }
+plugins {
+  id 'net.minecrell.licenser' version '0.3'
+  id 'org.ajoberstar.grgit' version '2.3.0'
+  id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
-apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 group = 'de.oceanlabs.mcp'
-version = '3.7-SNAPSHOT'
-targetCompatibility = sourceCompatibility = '1.8'
-compileJava {
-    sourceCompatibility = targetCompatibility = '1.8'
+version = gitVersion()
+targetCompatibility = sourceCompatibility = compileJava.targetCompatibility = compileJava.sourceCompatibility = '1.8'
+
+ext {
+    CHANGELOG = file("build/${project.name}-${project.version}-changelog.txt")
 }
 
 repositories {
     mavenCentral()
+}
+
+def gitVersion() {
+    def desc = grgit.describe(longDescr: true).split('-') as List
+    def hash = desc.remove(desc.size() - 1)
+    def offset = desc.remove(desc.size() - 1)
+    def tag = desc.join('-')
+    def branch = grgit.branch.current().name 
+    return "${tag}.${offset}${t -> if (branch != 'master') t << '-' + branch}"
 }
 
 jar {
@@ -38,6 +44,12 @@ artifacts {
     archives jar
     archives shadowJar
 }
+def changelog = file('build/changelog.txt')
+def changelog_named = CHANGELOG
+if (changelog.exists()) {
+    CHANGELOG.write(changelog.text)
+    artifacts.archives CHANGELOG
+}
 
 dependencies {
     compile 'org.ow2.asm:asm:6.1-beta2'
@@ -45,75 +57,67 @@ dependencies {
     compile 'net.sf.jopt-simple:jopt-simple:4.9'
     compile 'com.google.code.gson:gson:2.2.4'
 }
-configurations { deployJars }
-uploadArchives {
-    repositories {
-        add project.repositories.mavenLocal()
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact shadowJar
+            if (CHANGELOG.exists())
+                artifact source: CHANGELOG, classifier: 'changelog'
+            pom {
+                name = 'MCInjector'
+                description = 'Utility for cleaning up Minecraft jar files for decompolation'
+                url = 'https://github.com/ModCoderPack/MCInjector'
+                scm {
+                    url = 'https://github.com/ModCoderPack/MCInjector'
+                    connection = 'scm:git:git://github.com/ModCoderPack/MCInjector.git'
+                    developerConnection = 'scm:git:git@github.com:ModCoderPack/MCInjector.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/ModCoderPack/MCInjector/issues'
+                }
+
+                developers {
+                    developer {
+                        id = 'Fesh0r'
+                        name = 'Fesh0r'
+                    }
+                    developer {
+                        id = 'Searge'
+                        name = 'Searge'
+                    }
+                    developer {
+                        id = 'cpw'
+                        name = 'cpw'
+                    }
+                    developer {
+                        id = 'LexManos'
+                        name = 'Lex Manos'
+                    }
+                }
+
+                licenses { //TODO: Ask the guys if I can license LGPL2.1 like everything else.
+                    license {
+                        name = ''
+                        url = ''
+                        distribution = 'repo'
+                    }
+                }
+            }
+        }
     }
-    repositories.mavenDeployer {
-        configuration = configurations.deployJars
-
-        if (project.hasProperty('mavenPass')) {
-            logger.info('Publishing to files server')
-            repository(url: 'http://files.minecraftforge.net/maven/manage/upload') {
-                authentication(userName: 'mcp', password: project.getProperty('mavenPass'))
-            }
-        } else {
-            logger.info('Publishing to repo folder')
-            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
-        }
-
-        pom {
-            groupId = project.group
-            version = project.version
-            artifactId = project.archivesBaseName
-        }
-        pom.project {
-            name project.archivesBaseName
-            packaging 'jar'
-            description 'Java class metadata injector'
-            url 'https://github.com/ModCoderPack/MCInjector'
-
-            scm {
-                url 'https://github.com/ModCoderPack/MCInjector'
-                connection 'scm:git:git://github.com/ModCoderPack/MCInjector.git'
-                developerConnection 'scm:git:git@github.com:ModCoderPack/MCInjector.git'
-            }
-
-            issueManagement {
-                system 'github'
-                url 'https://github.com/ModCoderPack/MCInjector/issues'
-            }
-
-            licenses {
-                license {
-                    name ''
-                    url ''
-                    distribution 'repo'
+    repositories {
+        maven {
+            if (project.hasProperty('mavenPassword')) {
+                credentials {
+                    username = project.properties.mavenUser
+                    password = project.properties.mavenPassword 
                 }
-            }
-
-            developers {
-                developer {
-                    id 'Fesh0r'
-                    name 'Fesh0r'
-                    roles { role 'developer' }
-                }
-                developer {
-                    id 'Searge'
-                    name 'Searge'
-                    roles { role 'developer' }
-                }
-                developer {
-                    id 'cpw'
-                    name 'cpw'
-                    roles { role 'developer' }
-                }
-                developer {
-                    id 'LexManos'
-                    name 'Lex Manos'
-                    roles { role 'developer' }
-                }
+                url 'http://files.minecraftforge.net/maven/manage/upload'
+            } else {
+                url 'file://' + project.file('repo').getAbsolutePath()
             }
         }
     }
