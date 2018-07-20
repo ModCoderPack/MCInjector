@@ -3,10 +3,17 @@ package de.oceanlabs.mcp.mcinjector;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -34,6 +41,7 @@ import de.oceanlabs.mcp.mcinjector.lvt.LVTStrip;
 public class MCInjectorImpl
 {
     public LVTNaming naming = LVTNaming.STRIP;
+    private Map<String, List<String>> abstractParameters = new HashMap<>();
 
     static void process(
             Path in, Path out,
@@ -72,6 +80,7 @@ public class MCInjectorImpl
 
     private void processJar(Path inFile, Path outFile) throws IOException
     {
+        Set<String> entries = new HashSet<>();
         try (ZipInputStream inJar = new ZipInputStream(Files.newInputStream(inFile)))
         {
             try (ZipOutputStream outJar = new ZipOutputStream(outFile == null ? new ByteArrayOutputStream() : Files.newOutputStream(outFile, StandardOpenOption.CREATE)))
@@ -117,6 +126,19 @@ public class MCInjectorImpl
                     ZipEntry newEntry = new ZipEntry(entryName);
                     outJar.putNextEntry(newEntry);
                     outJar.write(entryData);
+                    entries.add(entryName);
+                }
+
+                if (!abstractParameters.isEmpty() && !entries.contains("fernflower_abstract_parameter_names.txt"))
+                {
+                    outJar.putNextEntry(new ZipEntry("fernflower_abstract_parameter_names.txt"));
+                    for (String key : abstractParameters.keySet().stream().sorted().collect(Collectors.toList()))
+                    {
+                        outJar.write(key.getBytes(StandardCharsets.UTF_8));//class method desc
+                        outJar.write(' ');
+                        outJar.write(abstractParameters.get(key).stream().collect(Collectors.joining(" ")).getBytes(StandardCharsets.UTF_8));
+                        outJar.write('\n');
+                    }
                 }
             }
         }
@@ -133,7 +155,7 @@ public class MCInjectorImpl
         }
         else
         {
-            ca = new ApplyMap(ca);
+            ca = new ApplyMap(this, ca);
 
             switch (naming)
             {
@@ -219,5 +241,10 @@ public class MCInjectorImpl
             throw new RuntimeException(e);
 
         }
+    }
+
+    public void storeAbstractParameters(String className, String name, String desc, List<String> params)
+    {
+        abstractParameters.put(className + ' ' + name  + ' ' + desc, params);
     }
 }

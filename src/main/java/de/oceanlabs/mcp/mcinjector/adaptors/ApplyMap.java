@@ -27,10 +27,12 @@ import de.oceanlabs.mcp.mcinjector.data.Exceptions;
 public class ApplyMap extends ClassVisitor
 {
     String className;
+    MCInjectorImpl injector;
 
-    public ApplyMap(ClassVisitor cn)
+    public ApplyMap(MCInjectorImpl injector, ClassVisitor cn)
     {
         super(Opcodes.ASM6, cn);
+        this.injector = injector;
     }
 
     @Override
@@ -52,10 +54,10 @@ public class ApplyMap extends ClassVisitor
         exceptions = processExceptions(className, name, desc, exceptions);
 
         // abstract and native methods don't have a Code attribute
-        if ((access & Opcodes.ACC_ABSTRACT) != 0 || (access & Opcodes.ACC_NATIVE) != 0)
+        /*if ((access & Opcodes.ACC_ABSTRACT) != 0 || (access & Opcodes.ACC_NATIVE) != 0)
         {
             return super.visitMethod(access, name, desc, signature, exceptions);
-        }
+        }*/
 
         return new MethodVisitor(api, cv.visitMethod(access, name, desc, signature, exceptions))
         {
@@ -119,6 +121,15 @@ public class ApplyMap extends ClassVisitor
             params.add(par_name);
             MCInjector.LOG.fine("      Naming argument " + x + " (" + y + ") -> " + par_name + " " + types.get(x).getDescriptor());
             y += types.get(x).getSize();
+        }
+
+        if ((mn.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) != 0) //Abstract and native methods dont have code so we need to store the names elseware.
+        {
+            if ((mn.access & Opcodes.ACC_STATIC) == 0)
+                params.remove(0); //remove 'this'
+            if (params.size() > 0)
+                injector.storeAbstractParameters(className, name, desc, params);
+            return;
         }
 
         MCInjector.LOG.fine("    Applying map:");
