@@ -43,7 +43,7 @@ public class MCInjectorImpl
     public LVTNaming naming = LVTNaming.STRIP;
     private Map<String, List<String>> abstractParameters = new HashMap<>();
 
-    static void process(
+    public static void process(
             Path in, Path out,
             Path accIn, Path accOut,
             Path ctrIn, Path ctrOut,
