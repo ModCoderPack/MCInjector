@@ -124,6 +124,7 @@ public class MCInjectorImpl
                     }
 
                     ZipEntry newEntry = new ZipEntry(entryName);
+                    newEntry.setTime(0); //Stabilize time.
                     outJar.putNextEntry(newEntry);
                     outJar.write(entryData);
                     entries.add(entryName);
@@ -131,7 +132,9 @@ public class MCInjectorImpl
 
                 if (!abstractParameters.isEmpty() && !entries.contains("fernflower_abstract_parameter_names.txt"))
                 {
-                    outJar.putNextEntry(new ZipEntry("fernflower_abstract_parameter_names.txt"));
+                    ZipEntry entry = new ZipEntry("fernflower_abstract_parameter_names.txt");
+                    entry.setTime(0); //Stabilize time.
+                    outJar.putNextEntry(entry);
                     for (String key : abstractParameters.keySet().stream().sorted().collect(Collectors.toList()))
                     {
                         outJar.write(key.getBytes(StandardCharsets.UTF_8));//class method desc
