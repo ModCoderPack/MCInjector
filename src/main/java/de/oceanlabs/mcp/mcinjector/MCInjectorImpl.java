@@ -110,7 +110,9 @@ public class MCInjectorImpl
 
                     String entryName = entry.getName();
 
-                    if (entryName.endsWith(".class") && entryName.startsWith("net/minecraft/") )
+                    boolean mojang = entryName.startsWith("net/minecraft/") || entryName.startsWith("com/mojang/");
+
+                    if (entryName.endsWith(".class") && mojang) //TODO: Remove this hardcoding? SRG input? process all?
                     {
                         MCInjector.LOG.log(Level.INFO, "Processing " + entryName);
 
