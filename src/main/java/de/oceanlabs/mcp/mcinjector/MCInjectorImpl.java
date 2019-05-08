@@ -90,6 +90,7 @@ public class MCInjectorImpl
                     if (entry.isDirectory())
                     {
                         outJar.putNextEntry(entry);
+                        outJar.closeEntry();
                         continue;
                     }
 
@@ -129,6 +130,7 @@ public class MCInjectorImpl
                     newEntry.setTime(0); //Stabilize time.
                     outJar.putNextEntry(newEntry);
                     outJar.write(entryData);
+                    outJar.closeEntry();
                     entries.add(entryName);
                 }
 
@@ -144,7 +146,10 @@ public class MCInjectorImpl
                         outJar.write(abstractParameters.get(key).stream().collect(Collectors.joining(" ")).getBytes(StandardCharsets.UTF_8));
                         outJar.write('\n');
                     }
+                    outJar.closeEntry();
                 }
+
+                outJar.flush();
             }
         }
     }
