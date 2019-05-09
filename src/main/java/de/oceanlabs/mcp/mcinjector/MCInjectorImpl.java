@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarEntry;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -83,13 +84,15 @@ public class MCInjectorImpl
         Set<String> entries = new HashSet<>();
         try (ZipInputStream inJar = new ZipInputStream(Files.newInputStream(inFile)))
         {
-            try (ZipOutputStream outJar = new ZipOutputStream(outFile == null ? new ByteArrayOutputStream() : Files.newOutputStream(outFile, StandardOpenOption.CREATE)))
+            try (ZipOutputStream outJar = new ZipOutputStream(outFile == null ? new ByteArrayOutputStream() : Files.newOutputStream(outFile)))
             {
                 for (ZipEntry entry = inJar.getNextEntry(); entry != null; entry = inJar.getNextEntry())
                 {
+                    String entryName = entry.getName();
+
                     if (entry.isDirectory())
                     {
-                        outJar.putNextEntry(entry);
+                        outJar.putNextEntry(new JarEntry(entryName));
                         outJar.closeEntry();
                         continue;
                     }
@@ -108,8 +111,6 @@ public class MCInjectorImpl
                     } while (len != -1);
 
                     byte[] entryData = entryBuffer.toByteArray();
-
-                    String entryName = entry.getName();
 
                     boolean mojang = entryName.startsWith("net/minecraft/") || entryName.startsWith("com/mojang/");
 
@@ -136,9 +137,9 @@ public class MCInjectorImpl
 
                 if (!abstractParameters.isEmpty() && !entries.contains("fernflower_abstract_parameter_names.txt"))
                 {
-                    ZipEntry entry = new ZipEntry("fernflower_abstract_parameter_names.txt");
-                    entry.setTime(0); //Stabilize time.
-                    outJar.putNextEntry(entry);
+                    ZipEntry newEntry = new ZipEntry("fernflower_abstract_parameter_names.txt");
+                    newEntry.setTime(0); //Stabilize time.
+                    outJar.putNextEntry(newEntry);
                     for (String key : abstractParameters.keySet().stream().sorted().collect(Collectors.toList()))
                     {
                         outJar.write(key.getBytes(StandardCharsets.UTF_8));//class method desc
@@ -148,8 +149,6 @@ public class MCInjectorImpl
                     }
                     outJar.closeEntry();
                 }
-
-                outJar.flush();
             }
         }
     }

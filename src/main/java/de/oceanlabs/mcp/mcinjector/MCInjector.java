@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -142,6 +143,23 @@ public class MCInjector
             return null;
         }
     };
+    private static ValueConverter<Level> LEVEL_ARG = new ValueConverter<Level>()
+    {
+        public Level convert( String value )
+        {
+            return Level.parse(value.toUpperCase(Locale.ENGLISH));
+        }
+
+        public Class<Level> valueType()
+        {
+            return Level.class;
+        }
+
+        public String valuePattern()
+        {
+            return null;
+        }
+    };
 
     public static void main(String[] args) throws Exception
     {
@@ -157,6 +175,7 @@ public class MCInjector
         OptionSpec<Path>      accOut = parser.accepts("accOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      ctr    = parser.accepts("ctr")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      ctrOut = parser.accepts("ctrOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Level>     logLvl = parser.accepts("level") .withRequiredArg().withValuesConvertedBy(LEVEL_ARG).defaultsTo(Level.INFO);
         OptionSpec<LVTNaming> lvt    = parser.accepts("lvt").withRequiredArg().ofType(LVTNaming.class).defaultsTo(LVTNaming.STRIP);
 
         try
@@ -175,7 +194,7 @@ public class MCInjector
             }
 
             MCInjector.LOG.setUseParentHandlers(false);
-            MCInjector.LOG.setLevel(Level.ALL);
+            MCInjector.LOG.setLevel(o.valueOf(logLvl));
 
             LOG.info(MCInjector.VERSION);
             LOG.info("Input:        " + o.valueOf(in));
