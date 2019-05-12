@@ -40,10 +40,17 @@ shadowJar {
     manifest.attributes('Implementation-Version': project.version)
 }
 
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
 artifacts {
     archives jar
     archives shadowJar
+    archives sourceJar
 }
+
 def changelog = file('build/changelog.txt')
 def changelog_named = CHANGELOG
 if (changelog.exists()) {
@@ -63,6 +70,7 @@ publishing {
         mavenJava(MavenPublication) {
             from components.java
             artifact shadowJar
+            artifact tasks.sourceJar
             if (CHANGELOG.exists())
                 artifact source: CHANGELOG, classifier: 'changelog'
             pom {
