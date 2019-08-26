@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
+import de.oceanlabs.mcp.mcinjector.data.Parameters;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -21,12 +22,12 @@ import org.objectweb.asm.tree.MethodNode;
 
 import de.oceanlabs.mcp.mcinjector.MCInjector;
 import de.oceanlabs.mcp.mcinjector.MCInjectorImpl;
-import de.oceanlabs.mcp.mcinjector.data.Constructors;
 import de.oceanlabs.mcp.mcinjector.data.Exceptions;
 
 public class ApplyMap extends ClassVisitor
 {
     String className;
+    boolean isEnum;
     MCInjectorImpl injector;
 
     public ApplyMap(MCInjectorImpl injector, ClassVisitor cn)
@@ -39,6 +40,7 @@ public class ApplyMap extends ClassVisitor
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
     {
         this.className = name;
+        isEnum = (access & Opcodes.ACC_ENUM) != 0;
         super.visit(version, access, name, signature, superName, interfaces);
     }
 
@@ -95,9 +97,11 @@ public class ApplyMap extends ClassVisitor
     {
         List<String> params = new ArrayList<>();
         List<Type> types = new ArrayList<>();
+        boolean isStatic = true;
 
         if ((mn.access & Opcodes.ACC_STATIC) == 0)
         {
+            isStatic = false;
             types.add(Type.getType("L" + cls + ";"));
             params.add(0, "this");
         }
@@ -109,11 +113,12 @@ public class ApplyMap extends ClassVisitor
             return;
 
         MCInjector.LOG.fine("    Generating map:");
-        String nameFormat = "p_" + name + "_%d_";
+        String nameFormat = null;
         if (name.matches("func_\\d+_.+")) // A srg name method params are just p_MethodID_ParamIndex_
             nameFormat = "p_" + name.substring(5, name.indexOf('_', 5)) + "_%s_";
-        else if (name.equals("<init>")) // Every constructor is given a unique ID, try to load the ID from the map, if none is found assign a new one
-            nameFormat = "p_i" + Constructors.INSTANCE.getID(className, desc, types.size() > 1) + "_%s_";
+        else if(!isSynthetic(mn))
+            nameFormat = "p_" + Parameters.INSTANCE.getName(className, name, desc, types.size() > params.size(), isStatic) + "_%s_"; //assign new name only if there are names remaining
+        else nameFormat = "p_%s_"; //don't really care about synthetics
 
         for (int x = params.size(), y = x; x < types.size(); x++)
         {
@@ -189,5 +194,19 @@ public class ApplyMap extends ClassVisitor
         }
 
         Collections.sort(mn.localVariables, (o1, o2) -> o1.index < o2.index ? -1 : (o1.index == o2.index ? 0 : 1));
+    }
+
+    private boolean isSynthetic(MethodNode mn){
+        if ((mn.access & Opcodes.ACC_SYNTHETIC) != 0) return true;
+
+        //check for special case pursuant to JLS 13.1.7
+        //which specifies that these are the one and only proper methods that may be generated and not be marked synthetic
+        if (isEnum && (mn.access & Opcodes.ACC_STATIC) != 0) {
+            if ("valueOf".equals(mn.name) && mn.desc.equals("(Ljava/lang/String;)L" + className + ";"))
+                return true;
+            if("values".equals(mn.name) && mn.desc.equals("()[L" + className + ";"))
+                return true;
+        }
+        return false;
     }
 }

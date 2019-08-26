@@ -32,7 +32,7 @@ import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMap;
 import de.oceanlabs.mcp.mcinjector.adaptors.InnerClassInitAdder;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
 import de.oceanlabs.mcp.mcinjector.data.Access;
-import de.oceanlabs.mcp.mcinjector.data.Constructors;
+import de.oceanlabs.mcp.mcinjector.data.Parameters;
 import de.oceanlabs.mcp.mcinjector.data.Exceptions;
 import de.oceanlabs.mcp.mcinjector.lvt.LVTFernflower;
 import de.oceanlabs.mcp.mcinjector.lvt.LVTLvt;
@@ -47,15 +47,18 @@ public class MCInjectorImpl
     static void process(
             Path in, Path out,
             Path accIn, Path accOut,
-            Path ctrIn, Path ctrOut,
+            Path ctrIn,
             Path excIn, Path excOut,
+            Path prmIn, Path prmOut,
             LVTNaming naming)
         throws IOException
     {
         if (accIn != null)
             Access.INSTANCE.load(accIn);
+        if (prmIn != null)
+            Parameters.INSTANCE.load(prmIn);
         if (ctrIn != null)
-            Constructors.INSTANCE.load(ctrIn);
+            Parameters.INSTANCE.loadLegacy(ctrIn);
         if (excIn != null)
             Exceptions.INSTANCE.load(excIn);
 
@@ -69,8 +72,8 @@ public class MCInjectorImpl
 
         if (accOut != null)
             Access.INSTANCE.dump(accOut);
-        if (ctrOut != null)
-            Constructors.INSTANCE.dump(ctrOut);
+        if (prmOut != null)
+            Parameters.INSTANCE.dump(prmOut);
         if (excOut != null)
             Exceptions.INSTANCE.dump(excOut);
 

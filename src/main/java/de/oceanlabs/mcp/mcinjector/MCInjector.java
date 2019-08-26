@@ -30,7 +30,8 @@ public class MCInjector
     private Path fileIn, fileOut;
     private Path excIn, excOut;
     private Path accIn, accOut;
-    private Path ctrIn, ctrOut;
+    private Path ctrIn;
+    private Path prmIn, prmOut;
     private LVTNaming lvt;
 
     public MCInjector(Path fileIn, Path fileOut)
@@ -104,9 +105,15 @@ public class MCInjector
         return this;
     }
 
-    public MCInjector constructorsOut(Path out)
+    public MCInjector parameters(Path ctrs)
     {
-        this.ctrOut = out;
+        this.prmIn = ctrs;
+        return this;
+    }
+
+    public MCInjector parametersOut(Path out)
+    {
+        this.prmOut = out;
         return this;
     }
 
@@ -121,8 +128,9 @@ public class MCInjector
     {
         MCInjectorImpl.process(fileIn, fileOut,
                                accIn, accOut,
-                               ctrIn, ctrOut,
+                               ctrIn,
                                excIn, excOut,
+                               prmIn, prmOut,
                                lvt);
     }
 
@@ -174,7 +182,9 @@ public class MCInjector
         OptionSpec<Path>      acc    = parser.accepts("acc")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      accOut = parser.accepts("accOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      ctr    = parser.accepts("ctr")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      ctrOut = parser.accepts("ctrOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      ctrOut = parser.accepts("ctrOut").withRequiredArg().withValuesConvertedBy(PATH_ARG).describedAs("legacy, can't be used anymore");
+        OptionSpec<Path>      prm    = parser.accepts("prm")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      prmOut = parser.accepts("prmOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Level>     logLvl = parser.accepts("level") .withRequiredArg().withValuesConvertedBy(LEVEL_ARG).defaultsTo(Level.INFO);
         OptionSpec<LVTNaming> lvt    = parser.accepts("lvt").withRequiredArg().ofType(LVTNaming.class).defaultsTo(LVTNaming.STRIP);
 
@@ -192,6 +202,11 @@ public class MCInjector
                 System.out.println(VERSION);
                 return;
             }
+            else if (o.has(ctrOut))
+            {
+                System.out.println("ctrOut is using the legacy format and is no longer supported!");
+                return;
+            }
 
             MCInjector.LOG.setUseParentHandlers(false);
             MCInjector.LOG.setLevel(o.valueOf(logLvl));
@@ -205,7 +220,8 @@ public class MCInjector
             LOG.info("Access:       " + o.valueOf(acc));
             LOG.info("              " + o.valueOf(accOut));
             LOG.info("Constructors: " + o.valueOf(ctr));
-            LOG.info("              " + o.valueOf(ctrOut));
+            LOG.info("Extra Params: " + o.valueOf(prm));
+            LOG.info("              " + o.valueOf(prmOut));
             LOG.info("LVT:          " + o.valueOf(lvt));
 
             try
@@ -219,7 +235,8 @@ public class MCInjector
                     .access(o.valueOf(acc))
                     .accessOut(o.valueOf(accOut))
                     .constructors(o.valueOf(ctr))
-                    .constructorsOut(o.valueOf(ctrOut))
+                    .parameters(o.valueOf(prm))
+                    .parametersOut(o.valueOf(prmOut))
                     .process();
             }
             catch (Exception e)
