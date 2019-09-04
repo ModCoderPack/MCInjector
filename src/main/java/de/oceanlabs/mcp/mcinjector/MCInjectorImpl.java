@@ -31,9 +31,11 @@ import de.oceanlabs.mcp.mcinjector.adaptors.AccessFixer;
 import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMap;
 import de.oceanlabs.mcp.mcinjector.adaptors.InnerClassInitAdder;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
+import de.oceanlabs.mcp.mcinjector.adaptors.OverrideAnnotationInjector;
 import de.oceanlabs.mcp.mcinjector.data.Access;
 import de.oceanlabs.mcp.mcinjector.data.Constructors;
 import de.oceanlabs.mcp.mcinjector.data.Exceptions;
+import de.oceanlabs.mcp.mcinjector.data.Overrides;
 import de.oceanlabs.mcp.mcinjector.lvt.LVTFernflower;
 import de.oceanlabs.mcp.mcinjector.lvt.LVTLvt;
 import de.oceanlabs.mcp.mcinjector.lvt.LVTNaming;
@@ -49,7 +51,7 @@ public class MCInjectorImpl
             Path accIn, Path accOut,
             Path ctrIn, Path ctrOut,
             Path excIn, Path excOut,
-            LVTNaming naming)
+            Path overrides, LVTNaming naming)
         throws IOException
     {
         if (accIn != null)
@@ -58,6 +60,8 @@ public class MCInjectorImpl
             Constructors.INSTANCE.load(ctrIn);
         if (excIn != null)
             Exceptions.INSTANCE.load(excIn);
+        if (overrides != null)
+            Overrides.INSTANCE.load(overrides);
 
         MCInjector.LOG.info("Processing: " + in);
         MCInjector.LOG.info("  Output: " + out);
@@ -176,6 +180,8 @@ public class MCInjectorImpl
             ca = new AccessFixer(ca);
 
             ca = new ParameterAnnotationFixer(ca, this);
+
+            ca = new OverrideAnnotationInjector(ca);
         }
 
         ca = new InnerClassInitAdder(ca);
