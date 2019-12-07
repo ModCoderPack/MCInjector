@@ -31,6 +31,7 @@ public class MCInjector
     private Path excIn, excOut;
     private Path accIn, accOut;
     private Path ctrIn, ctrOut;
+    private Path overrides;
     private LVTNaming lvt;
 
     public MCInjector(Path fileIn, Path fileOut)
@@ -110,6 +111,12 @@ public class MCInjector
         return this;
     }
 
+    public MCInjector overrides(Path overrides)
+    {
+        this.overrides = overrides;
+        return this;
+    }
+
     public MCInjector lvt(LVTNaming lvt)
     {
         this.lvt = lvt;
@@ -123,7 +130,7 @@ public class MCInjector
                                accIn, accOut,
                                ctrIn, ctrOut,
                                excIn, excOut,
-                               lvt);
+                               overrides, lvt);
     }
 
     private static ValueConverter<Path> PATH_ARG = new ValueConverter<Path>()
@@ -175,6 +182,7 @@ public class MCInjector
         OptionSpec<Path>      accOut = parser.accepts("accOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      ctr    = parser.accepts("ctr")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      ctrOut = parser.accepts("ctrOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      over   = parser.accepts("overrides").withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Level>     logLvl = parser.accepts("level") .withRequiredArg().withValuesConvertedBy(LEVEL_ARG).defaultsTo(Level.INFO);
         OptionSpec<LVTNaming> lvt    = parser.accepts("lvt").withRequiredArg().ofType(LVTNaming.class).defaultsTo(LVTNaming.STRIP);
 
@@ -206,6 +214,7 @@ public class MCInjector
             LOG.info("              " + o.valueOf(accOut));
             LOG.info("Constructors: " + o.valueOf(ctr));
             LOG.info("              " + o.valueOf(ctrOut));
+            LOG.info("Overrides:    " + o.valueOf(over));
             LOG.info("LVT:          " + o.valueOf(lvt));
 
             try
@@ -220,6 +229,7 @@ public class MCInjector
                     .accessOut(o.valueOf(accOut))
                     .constructors(o.valueOf(ctr))
                     .constructorsOut(o.valueOf(ctrOut))
+                    .overrides(o.valueOf(over))
                     .process();
             }
             catch (Exception e)
