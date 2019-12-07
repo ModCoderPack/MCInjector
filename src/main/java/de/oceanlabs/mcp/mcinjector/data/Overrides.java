@@ -22,30 +22,27 @@ public enum Overrides
         try
         {
             MCInjector.LOG.fine("Loading Override list from: " + file);
-            Files.readAllLines(file).forEach(line ->
+            Set<String> mthSet = null;
+            for(String line : Files.readAllLines(file))
             {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("#"))
-                    return;
+                    continue;
 
                 String[] parts = line.split(" " );
-                if (parts.length == 3)
+                if (parts[0].charAt(0) == '\t')
                 {
-                    // 'class method_name desc'
-                    this.classMemberOverrides.computeIfAbsent(parts[0], k -> new HashSet<>()).add(parts[1] + " " + parts[2]);
+                    if (mthSet == null)
+                    {
+                        throw new IOException("Invalid TSRG line, missing class: " + line);
+                    }
+                    mthSet.add(parts[1] + " " + parts[2]);
                 }
                 else
                 {
-                    // 'class/method_name desc'
-                    int index = parts[0].lastIndexOf('/');
-                    if (index != -1)
-                    {
-                        String cls = parts[0].substring(0, index);
-                        String name = parts[0].substring(index + 1);
-                        this.classMemberOverrides.computeIfAbsent(cls, k -> new HashSet<>()).add(name + " " + parts[1]);
-                    }
+                    mthSet = this.classMemberOverrides.computeIfAbsent(parts[0], k -> new HashSet<>());
                 }
-            });
+            }
         }
         catch (IOException e)
         {
