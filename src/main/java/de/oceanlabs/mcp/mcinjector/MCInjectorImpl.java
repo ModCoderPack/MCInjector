@@ -19,6 +19,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import de.oceanlabs.mcp.mcinjector.data.Classpath;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -50,7 +51,8 @@ public class MCInjectorImpl
             Path ctrIn,
             Path excIn, Path excOut,
             Path prmIn, Path prmOut,
-            LVTNaming naming)
+            LVTNaming naming,
+            Path[] classpath)
         throws IOException
     {
         if (accIn != null)
@@ -61,6 +63,8 @@ public class MCInjectorImpl
             Parameters.INSTANCE.loadLegacy(ctrIn);
         if (excIn != null)
             Exceptions.INSTANCE.load(excIn);
+        Classpath.INSTANCE.load(classpath);
+        Classpath.INSTANCE.add(in);
 
         MCInjector.LOG.info("Processing: " + in);
         MCInjector.LOG.info("  Output: " + out);

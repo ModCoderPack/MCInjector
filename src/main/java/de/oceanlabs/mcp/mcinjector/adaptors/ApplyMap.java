@@ -10,12 +10,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
+import de.oceanlabs.mcp.mcinjector.data.Classpath;
 import de.oceanlabs.mcp.mcinjector.data.Parameters;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -69,6 +73,7 @@ public class ApplyMap extends ClassVisitor
                 super.visitEnd();
                 processLVT(className, name, desc, MCInjectorImpl.getMethodNode(mv));
             }
+
         };
     }
 
@@ -107,6 +112,15 @@ public class ApplyMap extends ClassVisitor
         }
 
         types.addAll(Arrays.asList(Type.getArgumentTypes(mn.desc)));
+        ClassNode currentClass = Classpath.INSTANCE.loadClass("L" + cls + ";");
+        List<ClassNode> potentialSupers = Classpath.INSTANCE.findOverrides(currentClass, mn);
+
+        if (potentialSupers.size() > 1) {
+            if (mn.visibleAnnotations == null) {
+                mn.visibleAnnotations = new ArrayList<>();
+            }
+            mn.visibleAnnotations.add(new AnnotationNode("java/lang/Override"));
+        }
 
         //Skip anything with no params
         if (types.size() == 0)
@@ -117,7 +131,7 @@ public class ApplyMap extends ClassVisitor
         if (name.matches("func_\\d+_.+")) // A srg name method params are just p_MethodID_ParamIndex_
             nameFormat = "p_" + name.substring(5, name.indexOf('_', 5)) + "_%s_";
         else if(!isSynthetic(mn))
-            nameFormat = "p_" + Parameters.INSTANCE.getName(className, name, desc, types.size() > params.size(), isStatic) + "_%s_"; //assign new name only if there are names remaining
+            nameFormat = "p_" + Parameters.INSTANCE.getName(potentialSupers, cls,  name, desc, types.size() > params.size(), isStatic) + "_%s_"; //assign new name only if there are names remaining
         else nameFormat = "p_%s_"; //don't really care about synthetics
 
         for (int x = params.size(), y = x; x < types.size(); x++)

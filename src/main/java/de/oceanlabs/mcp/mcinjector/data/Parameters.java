@@ -1,6 +1,7 @@
 package de.oceanlabs.mcp.mcinjector.data;
 
 import de.oceanlabs.mcp.mcinjector.MCInjector;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -10,6 +11,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 public enum Parameters
@@ -24,6 +28,7 @@ public enum Parameters
     {
         this.fromDesc.clear();
         this.fromID.clear();
+        System.out.println(file.toFile().exists());
         try
         {
             MCInjector.LOG.fine("Loading Parameters from: " + file);
@@ -101,10 +106,20 @@ public enum Parameters
         this.fromID  .put(id, cls + " " + method + " " + desc);
     }
 
-    public String getName(String cls, String method, String desc, boolean generate, boolean isStatic)
+    public String getName(List<ClassNode> supers, String cls, String method, String desc, boolean generate, boolean isStatic)
     {
-        Integer id = this.fromDesc.get(cls + " " + method + " " + desc);
-        if (id == null)
+        String canonicalSuper = supers.get(0).name;
+        Integer cid = this.fromDesc.get(canonicalSuper + " " + method + " " + desc);
+        if (cid != null) {
+            return cid.toString();
+        }
+        OptionalInt id = supers.stream().skip(1)
+                            .map(s -> s + " " + method + " " + desc)
+                            .map(fromDesc::get)
+                            .filter(Objects::nonNull)
+                            .mapToInt(x -> x)
+                            .min();
+        if (!id.isPresent())
         {
             if (!generate)
                 return method; //if we are not generating new names we will return the old parameter format, _p_funcname_x_
@@ -112,6 +127,6 @@ public enum Parameters
             this.setName(cls, method, desc, newId);
             return Integer.toString(newId);
         }
-        return Integer.toString(id);
+        return id.toString();
     }
 }
