@@ -112,8 +112,7 @@ public class ApplyMap extends ClassVisitor
         }
 
         types.addAll(Arrays.asList(Type.getArgumentTypes(mn.desc)));
-        ClassNode currentClass = Classpath.INSTANCE.loadClass("L" + cls + ";");
-        List<ClassNode> potentialSupers = Classpath.INSTANCE.findOverrides(currentClass, mn);
+        List<Classpath.Method> potentialSupers = Classpath.INSTANCE.getTree().getInfo(className).getMethodInfo(name, desc).getOverrides();
 
         if (potentialSupers.size() > 1) {
             if (mn.visibleAnnotations == null) {
@@ -131,7 +130,7 @@ public class ApplyMap extends ClassVisitor
         if (name.matches("func_\\d+_.+")) // A srg name method params are just p_MethodID_ParamIndex_
             nameFormat = "p_" + name.substring(5, name.indexOf('_', 5)) + "_%s_";
         else if(!isSynthetic(mn))
-            nameFormat = "p_" + Parameters.INSTANCE.getName(potentialSupers, cls,  name, desc, types.size() > params.size(), isStatic) + "_%s_"; //assign new name only if there are names remaining
+            nameFormat = "p_" + Parameters.INSTANCE.getName(potentialSupers, cls,  name, desc, types.size() > params.size()) + "_%s_"; //assign new name only if there are names remaining
         else nameFormat = "p_%s_"; //don't really care about synthetics
 
         for (int x = params.size(), y = x; x < types.size(); x++)

@@ -6,18 +6,22 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import de.oceanlabs.mcp.mcinjector.lvt.LVTNaming;
 import joptsimple.OptionException;
@@ -36,7 +40,7 @@ public class MCInjector
     private Path accIn, accOut;
     private Path ctrIn;
     private Path prmIn, prmOut;
-    private Path[] classpath;
+    private List<Path> classpath;
     private LVTNaming lvt;
 
     public MCInjector(Path fileIn, Path fileOut)
@@ -80,7 +84,7 @@ public class MCInjector
         return this;
     }
 
-    private MCInjector classpath(Path[] clsPath) {
+    private MCInjector classpath(List<Path> clsPath) {
         this.classpath = clsPath;
         return this;
     }
@@ -204,6 +208,7 @@ public class MCInjector
         OptionSpec<Void>      ver     = parser.accepts("version")  .forHelp();
         OptionSpec<Path>      in      = parser.accepts("in")       .withRequiredArg().withValuesConvertedBy(PATH_ARG).required();
         OptionSpec<Path>      out     = parser.accepts("out")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      cfg     = parser.accepts("cfg")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      log     = parser.accepts("log")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      exc     = parser.accepts("exc")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
         OptionSpec<Path>      excOut  = parser.accepts("excOut")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
@@ -219,7 +224,22 @@ public class MCInjector
 
         try
         {
-            OptionSet o = parser.parse(args);
+            OptionSet o;
+            Set<Path> extraArgsFiles = new HashSet<>();
+            while (true) {
+                o = parser.parse(Stream.concat(Arrays.stream(args), extraArgsFiles.stream().flatMap(path -> {
+                    try {
+                        return Files.lines(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                })).toArray(String[]::new));
+                if (o.valuesOf(cfg).size() == extraArgsFiles.size()) {
+                    break;
+                }
+                extraArgsFiles.addAll(o.valuesOf(cfg));
+            }
             if (o.has(help))
             {
                 System.out.println(VERSION);
@@ -236,6 +256,7 @@ public class MCInjector
                 System.out.println("ctrOut is using the legacy format and is no longer supported!");
                 return;
             }
+
 
             MCInjector.LOG.setUseParentHandlers(false);
             MCInjector.LOG.setLevel(o.valueOf(logLvl));
@@ -263,7 +284,7 @@ public class MCInjector
                     .log()
                     .lvt(o.valueOf(lvt))
                     .log(o.valueOf(log))
-                    .classpath(o.valuesOf(clsPath).stream().flatMap(Arrays::stream).toArray(Path[]::new))
+                    .classpath(o.valuesOf(clsPath).stream().flatMap(Arrays::stream).collect(Collectors.toList()))
                     .exceptions(o.valueOf(exc))
                     .exceptionsOut(o.valueOf(excOut))
                     .access(o.valueOf(acc))

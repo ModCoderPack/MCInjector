@@ -106,26 +106,54 @@ public enum Parameters
         this.fromID  .put(id, cls + " " + method + " " + desc);
     }
 
-    public String getName(List<ClassNode> supers, String cls, String method, String desc, boolean generate, boolean isStatic)
+    public String getName(List<Classpath.Method> overrides, String cls, String method, String desc, boolean generate)
     {
-        String canonicalSuper = supers.get(0).name;
-        Integer cid = this.fromDesc.get(canonicalSuper + " " + method + " " + desc);
-        if (cid != null) {
-            return cid.toString();
+        OptionalInt id;
+        if (!method.startsWith("<") && !overrides.isEmpty()) {
+            Classpath.Method canonicalSuper = overrides.get(0);
+            Integer cid = this.fromDesc.get(canonicalSuper.getOwner() + " " + canonicalSuper.getName() + " " + canonicalSuper.getDesc());
+            if (cid != null) {
+                System.out.println("Using param name from superclass canon " + canonicalSuper + " for " + cls + " " + method + " " + desc);
+                return cid.toString();
+            }
+            id = overrides.stream().skip(1)
+                                   .map(s -> s.getOwner() + " " + s.getName() + " " + s.getDesc())
+                                   .map(fromDesc::get)
+                                   .filter(Objects::nonNull)
+                                   .mapToInt(x -> x)
+                                   .min();
+
+            if (!id.isPresent()) {
+                Integer i = fromDesc.get(cls + " " + method + " " + desc);
+                id = i == null ? OptionalInt.empty() : OptionalInt.of(i);
+            }
+        } else {
+            Integer i = fromDesc.get(cls + " " + method + " " + desc);
+            id = i == null ? OptionalInt.empty() : OptionalInt.of(i);
         }
-        OptionalInt id = supers.stream().skip(1)
-                            .map(s -> s + " " + method + " " + desc)
-                            .map(fromDesc::get)
-                            .filter(Objects::nonNull)
-                            .mapToInt(x -> x)
-                            .min();
         if (!id.isPresent())
         {
-            if (!generate)
+            if (!generate) {
+                if (!method.equals("<init>") && !desc.equals("()V")) {
+                    System.out.println("Could not find param id for " + cls + " " + method + " " + desc);
+                    for (Classpath.Method md : overrides) {
+                        System.out.println("Tried: " + md.toString());
+                    }
+                }
                 return method; //if we are not generating new names we will return the old parameter format, _p_funcname_x_
+            }
             int newId = ++maxID;
             this.setName(cls, method, desc, newId);
             return Integer.toString(newId);
+        } else {
+            for(Classpath.Method mi : overrides) {
+                if (fromDesc.containsKey(mi.getOwner() + " " + mi.getName() + " " + mi.getDesc())) {
+                    if (fromDesc.get(mi.getOwner() + " " + mi.getName() + " " + mi.getDesc()) == id.getAsInt()) {
+                        System.out.println("Using param name from superclass noc" + mi.getOwner() + " " + mi.getName()+mi.getDesc() + " for " + cls + " " + method + " " + desc);
+                        break;
+                    }
+                }
+            }
         }
         return id.toString();
     }

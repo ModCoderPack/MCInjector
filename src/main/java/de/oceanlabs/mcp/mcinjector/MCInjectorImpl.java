@@ -52,7 +52,7 @@ public class MCInjectorImpl
             Path excIn, Path excOut,
             Path prmIn, Path prmOut,
             LVTNaming naming,
-            Path[] classpath)
+            List<Path> classpath)
         throws IOException
     {
         if (accIn != null)
@@ -63,8 +63,7 @@ public class MCInjectorImpl
             Parameters.INSTANCE.loadLegacy(ctrIn);
         if (excIn != null)
             Exceptions.INSTANCE.load(excIn);
-        Classpath.INSTANCE.load(classpath);
-        Classpath.INSTANCE.add(in);
+        Classpath.INSTANCE.load(in, classpath);
 
         MCInjector.LOG.info("Processing: " + in);
         MCInjector.LOG.info("  Output: " + out);
