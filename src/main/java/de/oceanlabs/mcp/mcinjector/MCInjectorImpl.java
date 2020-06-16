@@ -19,6 +19,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import de.oceanlabs.mcp.mcinjector.data.Classpath;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -33,7 +34,7 @@ import de.oceanlabs.mcp.mcinjector.adaptors.ClassInitAdder;
 import de.oceanlabs.mcp.mcinjector.adaptors.InnerClassInitAdder;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
 import de.oceanlabs.mcp.mcinjector.data.Access;
-import de.oceanlabs.mcp.mcinjector.data.Constructors;
+import de.oceanlabs.mcp.mcinjector.data.Parameters;
 import de.oceanlabs.mcp.mcinjector.data.Exceptions;
 import de.oceanlabs.mcp.mcinjector.lvt.LVTFernflower;
 import de.oceanlabs.mcp.mcinjector.lvt.LVTLvt;
@@ -48,17 +49,22 @@ public class MCInjectorImpl
     static void process(
             Path in, Path out,
             Path accIn, Path accOut,
-            Path ctrIn, Path ctrOut,
+            Path ctrIn,
             Path excIn, Path excOut,
-            LVTNaming naming)
+            Path prmIn, Path prmOut,
+            LVTNaming naming,
+            List<Path> classpath)
         throws IOException
     {
         if (accIn != null)
             Access.INSTANCE.load(accIn);
+        if (prmIn != null)
+            Parameters.INSTANCE.load(prmIn);
         if (ctrIn != null)
-            Constructors.INSTANCE.load(ctrIn);
+            Parameters.INSTANCE.loadLegacy(ctrIn);
         if (excIn != null)
             Exceptions.INSTANCE.load(excIn);
+        Classpath.INSTANCE.load(in, classpath);
 
         MCInjector.LOG.info("Processing: " + in);
         MCInjector.LOG.info("  Output: " + out);
@@ -70,8 +76,8 @@ public class MCInjectorImpl
 
         if (accOut != null)
             Access.INSTANCE.dump(accOut);
-        if (ctrOut != null)
-            Constructors.INSTANCE.dump(ctrOut);
+        if (prmOut != null)
+            Parameters.INSTANCE.dump(prmOut);
         if (excOut != null)
             Exceptions.INSTANCE.dump(excOut);
 

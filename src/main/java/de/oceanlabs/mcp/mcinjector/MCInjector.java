@@ -1,19 +1,27 @@
 package de.oceanlabs.mcp.mcinjector;
 import static joptsimple.internal.Reflection.invoke;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import de.oceanlabs.mcp.mcinjector.lvt.LVTNaming;
 import joptsimple.OptionException;
@@ -30,7 +38,9 @@ public class MCInjector
     private Path fileIn, fileOut;
     private Path excIn, excOut;
     private Path accIn, accOut;
-    private Path ctrIn, ctrOut;
+    private Path ctrIn;
+    private Path prmIn, prmOut;
+    private List<Path> classpath;
     private LVTNaming lvt;
 
     public MCInjector(Path fileIn, Path fileOut)
@@ -74,6 +84,11 @@ public class MCInjector
         return this;
     }
 
+    private MCInjector classpath(List<Path> clsPath) {
+        this.classpath = clsPath;
+        return this;
+    }
+
     public MCInjector exceptions(Path exc)
     {
         this.excIn = exc;
@@ -104,9 +119,15 @@ public class MCInjector
         return this;
     }
 
-    public MCInjector constructorsOut(Path out)
+    public MCInjector parameters(Path ctrs)
     {
-        this.ctrOut = out;
+        this.prmIn = ctrs;
+        return this;
+    }
+
+    public MCInjector parametersOut(Path out)
+    {
+        this.prmOut = out;
         return this;
     }
 
@@ -121,9 +142,11 @@ public class MCInjector
     {
         MCInjectorImpl.process(fileIn, fileOut,
                                accIn, accOut,
-                               ctrIn, ctrOut,
+                               ctrIn,
                                excIn, excOut,
-                               lvt);
+                               prmIn, prmOut,
+                               lvt,
+                               classpath);
     }
 
     private static ValueConverter<Path> PATH_ARG = new ValueConverter<Path>()
@@ -136,6 +159,23 @@ public class MCInjector
         public Class<Path> valueType()
         {
             return Path.class;
+        }
+
+        public String valuePattern()
+        {
+            return null;
+        }
+    };
+    private static ValueConverter<Path[]> MULTIPATH_ARG = new ValueConverter<Path[]>()
+    {
+        public Path[] convert(String value )
+        {
+            return Arrays.stream(value.split(File.pathSeparator)).map(Paths::get).toArray(Path[]::new);
+        }
+
+        public Class<Path[]> valueType()
+        {
+            return Path[].class;
         }
 
         public String valuePattern()
@@ -164,23 +204,42 @@ public class MCInjector
     public static void main(String[] args) throws Exception
     {
         OptionParser parser = new OptionParser();
-        OptionSpec<Void>      help   = parser.accepts("help")   .forHelp();
-        OptionSpec<Void>      ver    = parser.accepts("version").forHelp();
-        OptionSpec<Path>      in     = parser.accepts("in")    .withRequiredArg().withValuesConvertedBy(PATH_ARG).required();
-        OptionSpec<Path>      out    = parser.accepts("out")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      log    = parser.accepts("log")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      exc    = parser.accepts("exc")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      excOut = parser.accepts("excOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      acc    = parser.accepts("acc")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      accOut = parser.accepts("accOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      ctr    = parser.accepts("ctr")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Path>      ctrOut = parser.accepts("ctrOut").withRequiredArg().withValuesConvertedBy(PATH_ARG);
-        OptionSpec<Level>     logLvl = parser.accepts("level") .withRequiredArg().withValuesConvertedBy(LEVEL_ARG).defaultsTo(Level.INFO);
-        OptionSpec<LVTNaming> lvt    = parser.accepts("lvt").withRequiredArg().ofType(LVTNaming.class).defaultsTo(LVTNaming.STRIP);
+        OptionSpec<Void>      help    = parser.accepts("help")     .forHelp();
+        OptionSpec<Void>      ver     = parser.accepts("version")  .forHelp();
+        OptionSpec<Path>      in      = parser.accepts("in")       .withRequiredArg().withValuesConvertedBy(PATH_ARG).required();
+        OptionSpec<Path>      out     = parser.accepts("out")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      cfg     = parser.accepts("cfg")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      log     = parser.accepts("log")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      exc     = parser.accepts("exc")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      excOut  = parser.accepts("excOut")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      acc     = parser.accepts("acc")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      accOut  = parser.accepts("accOut")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      ctr     = parser.accepts("ctr")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      ctrOut  = parser.accepts("ctrOut")   .withRequiredArg().withValuesConvertedBy(PATH_ARG).describedAs("legacy, can't be used anymore");
+        OptionSpec<Path>      prm     = parser.accepts("prm")      .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Path>      prmOut  = parser.accepts("prmOut")   .withRequiredArg().withValuesConvertedBy(PATH_ARG);
+        OptionSpec<Level>     logLvl  = parser.accepts("level")    .withRequiredArg().withValuesConvertedBy(LEVEL_ARG).defaultsTo(Level.INFO);
+        OptionSpec<LVTNaming> lvt     = parser.accepts("lvt")      .withRequiredArg().ofType(LVTNaming.class).defaultsTo(LVTNaming.STRIP);
+        OptionSpec<Path[]>    clsPath = parser.acceptsAll(Arrays.stream(new String[]{"classpath", "e"}).collect(Collectors.toList())).withRequiredArg().withValuesConvertedBy(MULTIPATH_ARG);
 
         try
         {
-            OptionSet o = parser.parse(args);
+            OptionSet o;
+            Set<Path> extraArgsFiles = new HashSet<>();
+            while (true) {
+                o = parser.parse(Stream.concat(Arrays.stream(args), extraArgsFiles.stream().flatMap(path -> {
+                    try {
+                        return Files.lines(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                })).toArray(String[]::new));
+                if (o.valuesOf(cfg).size() == extraArgsFiles.size()) {
+                    break;
+                }
+                extraArgsFiles.addAll(o.valuesOf(cfg));
+            }
             if (o.has(help))
             {
                 System.out.println(VERSION);
@@ -192,6 +251,12 @@ public class MCInjector
                 System.out.println(VERSION);
                 return;
             }
+            else if (o.has(ctrOut))
+            {
+                System.out.println("ctrOut is using the legacy format and is no longer supported!");
+                return;
+            }
+
 
             MCInjector.LOG.setUseParentHandlers(false);
             MCInjector.LOG.setLevel(o.valueOf(logLvl));
@@ -205,8 +270,13 @@ public class MCInjector
             LOG.info("Access:       " + o.valueOf(acc));
             LOG.info("              " + o.valueOf(accOut));
             LOG.info("Constructors: " + o.valueOf(ctr));
-            LOG.info("              " + o.valueOf(ctrOut));
+            LOG.info("Extra Params: " + o.valueOf(prm));
+            LOG.info("              " + o.valueOf(prmOut));
             LOG.info("LVT:          " + o.valueOf(lvt));
+            if (o.hasArgument(clsPath))
+                for(Path[] pp : o.valuesOf(clsPath))
+                    for(Path p : pp)
+                        LOG.info("Classpath:    " + p);
 
             try
             {
@@ -214,12 +284,14 @@ public class MCInjector
                     .log()
                     .lvt(o.valueOf(lvt))
                     .log(o.valueOf(log))
+                    .classpath(o.valuesOf(clsPath).stream().flatMap(Arrays::stream).collect(Collectors.toList()))
                     .exceptions(o.valueOf(exc))
                     .exceptionsOut(o.valueOf(excOut))
                     .access(o.valueOf(acc))
                     .accessOut(o.valueOf(accOut))
                     .constructors(o.valueOf(ctr))
-                    .constructorsOut(o.valueOf(ctrOut))
+                    .parameters(o.valueOf(prm))
+                    .parametersOut(o.valueOf(prmOut))
                     .process();
             }
             catch (Exception e)
