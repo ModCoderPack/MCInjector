@@ -29,6 +29,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import de.oceanlabs.mcp.mcinjector.adaptors.AccessFixer;
 import de.oceanlabs.mcp.mcinjector.adaptors.ApplyMap;
+import de.oceanlabs.mcp.mcinjector.adaptors.ClassInitAdder;
 import de.oceanlabs.mcp.mcinjector.adaptors.InnerClassInitAdder;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
 import de.oceanlabs.mcp.mcinjector.data.Access;
@@ -176,9 +177,9 @@ public class MCInjectorImpl
             ca = new AccessFixer(ca);
 
             ca = new ParameterAnnotationFixer(ca, this);
+            ca = new InnerClassInitAdder(ca);
+            ca = new ClassInitAdder(ca);
         }
-
-        ca = new InnerClassInitAdder(ca);
 
         ca = new ClassVisitor(Opcodes.ASM6, ca) //Top level, so we can print the logs.
         {
